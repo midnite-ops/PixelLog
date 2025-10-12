@@ -2,33 +2,57 @@
  * logSave.jsx
  * This script appends a line to a log file every time it runs.
  */
+function logObject(obj){
+    var objectArray = [];
+    for(var key in obj){
+        objectArray.push(key + ': ' + obj[key]);
+    }
+    return objectArray.join('\n');
+}
 
-var retouchHistory = [];
+var retouchArray = ['Brush Tool', 'Mixer Brush', 'Layer Via Copy', 'Stamp Visible', 'Clone Stamp']
+var historyArray = app.activeDocument.historyStates
 
-// var historyArray = app.activeDocument.historyStates;
-// for(var i = 0; i < historyArray.length; i++){
-//     var state = historyArray[i].name;
-//     if(state === 'Brush Tool' || state === 'Mixer Brush' || state === 'Clone Stamp' || state === 'Layer Via Copy' || state === 'Patch Tool'){
-//         retouchHistory.push(state);
-//     }
-// }
-// alert(retouchHistory)
-// var retouched = []
-// for (var i = 0; i < retouchHistory.length; i++) {
-//     var item = retouchHistory[i];
-//     alert(item)
-//     // If we haven't seen this item yet
-//     if (retouched.indexOf(item) === -1) {
-//         retouched.push(item); // Mark as seen
-//         // Do something with item here
-//     }
-// }
-// alert(retouched)
+var retouched = {}
+for(var i = 0; i < historyArray.length; i++){
+    var historyName = historyArray[i].name;
+    var cleanName = historyName.replace(/^\s+|\s+$/g, '');
+    
+    // Manual indexOf check
+    var found = false;
+    for(var j = 0; j < retouchArray.length; j++){
+        if(retouchArray[j] === cleanName){
+            found = true;
+            break;
+        }
+    }
+    
+    if(found){
+        if(retouched[cleanName]){
+            retouched[cleanName]++;
+        }else{
+            retouched[cleanName] = 1;
+        }
+    }
+  
+}
 
-var logFile = new File("~/Desktop/pixelLog.txt");
-logFile.open('a');
-logFile.writeln(app.activeDocument.name + 'was saved at' + new Date())
-logFile.close()
-alert(app.activeDocument.name + ' was saved')
 
+try{
+    var logFile = new File('~/Desktop/pixelLog.json');
+    var pixelLog = {
+        fileName: app.activeDocument.name,
+        filePath: app.activeDocument.fullName,
+        fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
+        date: new Date().toISOString(),
+        history: logObject(retouched)
+    }
+   
+    logFile.open('a')
+    logFile.writeln(logObject(pixelLog));
+    logFile.close()
+   
+}catch(e){
+    alert('The script is invalid')
+}
 
