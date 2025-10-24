@@ -9,5 +9,7 @@ for(var i = app.notifiers.length - 1; i >= 0; i--){
 }
 var saved = app.notifiers.add('save', eventFile)
 var exportEvent = app.notifiers.add('Expr', eventFile)
+var printed = app.notifiers.add('Prnt', eventFile)
+
 
 
