@@ -85,7 +85,7 @@ try {
     // --- Add new log entry ---
     var pixelLog = {
         fileName: app.activeDocument.name,
-        filePath: app.activeDocument.fullName,
+        filePath: app.activeDocument.fullName.fsName,
         fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
         date: new Date().toString(),
         history: retouched
