@@ -36,13 +36,77 @@ function toJSON(obj, indent) {
     return '""';
 }
 
+// Check if this file already exists in logs
+function FindFileIndex(arr){
+    var existingIndex = -1;
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i].filePath === app.activeDocument.fullName.toString()) {
+            existingIndex = i;
+            break;
+        }
+    }
+    return existingIndex
+}
+
 // --- Main Script ---
 try {
+     // Setup PixelLog file
+    var logFile = new File('~/Desktop/pixelLog.json');
+    var logs = [];
+
+
+    // Read old logs (if file exists)
+    if (logFile.exists) {
+        logFile.open('r');
+        var content = logFile.read();
+        logFile.close();
+
+        try {
+            if (content && content[0] === "[") eval("logs = " + content);
+            else if (content && content[0] === "{") eval("logs = [" + content + "]");
+        } catch (err) {
+            logs = [];
+        }
+    }
+    var fileIndex = FindFileIndex(logs)
+    // --- Detect Photoshop event type safely ---
+    // Photoshop notifiers pass different kinds of arguments depending on the event.
+    // Sometimes it's just the numeric event ID (e.g., 'save', 'Opn ').
+    // Other times, Photoshop passes an ActionDescriptor as the first argument,
+    // and the actual event ID comes as the second argument.
+    //
+    // This block checks both cases safely before calling typeIDToCharID().
+    // If neither condition matches, we fall back to 'unknown' to prevent errors.
+    var eventType = 'unknown';
+
+    if (arguments && arguments.length > 0) {
+        var arg = arguments[0];
+
+        // Case 1: Photoshop passed only a numeric event ID
+        if (typeof arg === 'number') {
+            try {
+                eventType = typeIDToCharID(arg);
+            } catch (e) {
+                eventType = 'unknown'; // Fallback if conversion fails
+            }
+        }
+        // Case 2: Photoshop passed an ActionDescriptor first,
+        // and the numeric event ID is in the second argument
+        else if (arg instanceof ActionDescriptor && arguments.length > 1 && typeof arguments[1] === 'number') {
+            try {
+                eventType = typeIDToCharID(arguments[1]);
+            } catch (e) {
+                eventType = 'unknown';
+            }
+        }
+    }
+
+
     var retouchArray = ['Brush Tool', 'Mixer Brush', 'Layer Via Copy', 'Stamp Visible', 'Clone Stamp'];
     var historyArray = app.activeDocument.historyStates;
     var retouched = {};
 
-    // 1️⃣ Collect all retouch actions in this session
+    // Collect all retouch actions in this session
     for (var i = 0; i < historyArray.length; i++) {
         var historyName = historyArray[i].name.replace(/^\s+|\s+$/g, ''); // trim whitespace
 
@@ -61,59 +125,34 @@ try {
         }
     }
 
-    // 2️⃣ Setup PixelLog file
-    var logFile = new File('~/Desktop/pixelLog.json');
-    var logs = [];
+    var newEvent = {type: eventType, date: new Date().toString()};
+    alert(eventType)
 
-    // 3️⃣ Read old logs (if file exists)
-    if (logFile.exists) {
-        logFile.open('r');
-        var content = logFile.read();
-        logFile.close();
-
-        try {
-            if (content && content[0] === "[") eval("logs = " + content);
-            else if (content && content[0] === "{") eval("logs = [" + content + "]");
-        } catch (err) {
-            logs = [];
+    //  If file already logged before → treat as reopen
+    if (fileIndex >= 0) {
+        //Pushes in a new entry to the newEntry.event array if isOpenEvent is true
+        if(eventType === 'Opn '){
+            logs[fileIndex].event.push({type: 'reopened', date: new Date().toString()})
         }
-    }
-
-    // 4️⃣ Check if this file already exists in logs
-    var existingIndex = -1;
-    for (var i = 0; i < logs.length; i++) {
-        if (logs[i].filePath === app.activeDocument.fullName.toString()) {
-            existingIndex = i;
-            break;
+        if (eventType === 'save' || eventType === 'Expr') {
+            newEvent.sessionHistory = retouched;
+            logs[fileIndex].event.push(newEvent);
         }
-    }
-
-    // 5️⃣ Create a new log entry for this session
-    var newEntry = {
-        fileName: app.activeDocument.name,
-        filePath: app.activeDocument.fullName.toString(),
-        fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
-        date: new Date().toString(),
-        history: retouched
-    };
-
-    // 6️⃣ If file already logged before → treat as reopen
-    if (existingIndex !== -1) {
-        if (!logs[existingIndex].reopens) logs[existingIndex].reopens = [];
-        logs[existingIndex].reopens.push({
-            date: new Date().toString(),
-            sessionHistory: retouched
-        });
+        
     } else {
-        logs.push(newEntry);
+        logs.push({
+            fileName: app.activeDocument.name,
+            filePath: app.activeDocument.fullName.toString(),
+            fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
+            history: retouched,
+            event: [newEvent]
+        });
     }
 
-    // 7️⃣ Save logs back to disk (formatted)
+    // Save logs back to disk (formatted)
     logFile.open('w');
     logFile.write(toJSON(logs));
     logFile.close();
-
-    alert("PixelLog updated ✅");
 
 } catch (e) {
     alert("PixelLog Error: " + e.message);
