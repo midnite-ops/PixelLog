@@ -58,7 +58,7 @@ function saveToDisk(){
 // --- Main Script ---
 try {
      // Setup PixelLog file
-    var logFile = new File('~/Desktop/pixelLog.json');
+    var logFile = new File('~/Documents/Code/pixelLog/logs/pixelLog.json');
     var logs = [];
 
 
