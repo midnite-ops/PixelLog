@@ -48,6 +48,13 @@ function FindFileIndex(arr){
     return existingIndex
 }
 
+function saveToDisk(){
+    // Save logs back to disk (formatted)
+    logFile.open('w');
+    logFile.write(toJSON(logs));
+    logFile.close();
+}
+
 // --- Main Script ---
 try {
      // Setup PixelLog file
@@ -125,18 +132,21 @@ try {
         }
     }
 
-    var newEvent = {type: eventType, date: new Date().toString()};
-    alert(eventType)
+    var newEvent = {type: eventType, date: new Date().toString(), history: retouched};
 
-    //  If file already logged before → treat as reopen
+    //  If file already logged before 
     if (fileIndex >= 0) {
-        //Pushes in a new entry to the newEntry.event array if isOpenEvent is true
+        //Pushes in a new entry to the newEntry.event array if eventType is Opn
         if(eventType === 'Opn '){
             logs[fileIndex].event.push({type: 'reopened', date: new Date().toString()})
+            saveToDisk();
+          
         }
         if (eventType === 'save' || eventType === 'Expr') {
-            newEvent.sessionHistory = retouched;
+            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
             logs[fileIndex].event.push(newEvent);
+            saveToDisk();
+           
         }
         
     } else {
@@ -144,15 +154,13 @@ try {
             fileName: app.activeDocument.name,
             filePath: app.activeDocument.fullName.toString(),
             fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
-            history: retouched,
             event: [newEvent]
         });
+        saveToDisk();
+        
     }
 
-    // Save logs back to disk (formatted)
-    logFile.open('w');
-    logFile.write(toJSON(logs));
-    logFile.close();
+    
 
 } catch (e) {
     alert("PixelLog Error: " + e.message);
