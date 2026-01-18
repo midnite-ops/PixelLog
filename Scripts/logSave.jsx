@@ -36,6 +36,22 @@ function toJSON(obj, indent) {
     return '""';
 }
 
+//modifyObject takes three parameters: source which is the object, olditem which is the value in a the object key you want to replace and newItem is the new value in the object key 
+function modifyObject(source, oldItem, newItem){
+    var target = {}
+    for(var key in source){
+        if(source.hasOwnProperty(key)){
+            if(source[key] === oldItem){
+                target[key] = newItem
+            }else{
+                target[key] = source[key]
+            }
+            
+        }
+    }
+    return target
+}
+
 // Check if this file already exists in logs
 function FindFileIndex(arr){
     var existingIndex = -1;
@@ -48,10 +64,10 @@ function FindFileIndex(arr){
     return existingIndex
 }
 
-function saveToDisk(){
+function saveToDisk(logsData){
     // Save logs back to disk (formatted)
     logFile.open('w');
-    logFile.write(toJSON(logs));
+    logFile.write(toJSON(logsData));
     logFile.close();
 }
 
@@ -60,9 +76,10 @@ try {
      // Setup PixelLog file
 
      // This line creates a new file in the specified directory
-    var logFile = new File('~/Documents/Code/pixelLog/logs/pixelLog.json');
+    var systemHome = Folder('~')
+    var logFile = new File(systemHome + '/Documents/pixelLog.json');
     var logs = [];
-
+    
 
     // Read old logs (if file exists)
     if (logFile.exists) {
@@ -89,7 +106,6 @@ try {
     var eventType = 'unknown';
 
     //arguments is a built-in array like object, it contains everything passes into this script when a notifer is triggered
-
     if (arguments && arguments.length > 0) {
         var arg = arguments[0];
 
@@ -143,14 +159,24 @@ try {
         //Pushes in a new entry to the newEntry.event array if eventType is Opn
         if(eventType === 'Opn '){
             logs[fileIndex].event.push({type: 'reopened', date: new Date().toString()})
-            saveToDisk();
+            saveToDisk(logs);
           
         }
-        if (eventType === 'save' || eventType === 'Expr') {
+        else if (eventType === 'save') {
             newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
             logs[fileIndex].event.push(newEvent);
-            saveToDisk();
+            saveToDisk(logs);
            
+        }
+        else if(eventType === 'Expr'){
+            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
+            logs[fileIndex].event.push(modifyObject(newEvent, 'Expr', 'Export'));
+            saveToDisk(logs);
+        }
+        else if(eventType === 'Prnt'){
+            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
+            logs[fileIndex].event.push(modifyObject(newEvent, 'Prnt', 'print'));
+            saveToDisk(logs);
         }
         
     } else {
@@ -160,7 +186,7 @@ try {
             fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
             event: [newEvent]
         });
-        saveToDisk();
+        saveToDisk(logs);
         
     }
 
