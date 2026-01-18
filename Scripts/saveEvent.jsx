@@ -1,4 +1,5 @@
 /* This file records the save event in photoshop and runs eventFile */
+
 var currentFolder = File($.fileName).parent
 var eventFile = new File (currentFolder + '/logSave.jsx');
 app.notifiersEnabled = true
@@ -10,7 +11,7 @@ for(var i = app.notifiers.length - 1; i >= 0; i--){
 var saved = app.notifiers.add('save', eventFile)
 var exportEvent = app.notifiers.add('Expr', eventFile)
 var printed = app.notifiers.add('Prnt', eventFile)
-var open = app.notifeiers.add('Opn ')
+var open = app.notifiers.add('Opn ')
 
 
 

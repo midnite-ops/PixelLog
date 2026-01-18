@@ -58,6 +58,8 @@ function saveToDisk(){
 // --- Main Script ---
 try {
      // Setup PixelLog file
+
+     // This line creates a new file in the specified directory
     var logFile = new File('~/Documents/Code/pixelLog/logs/pixelLog.json');
     var logs = [];
 
@@ -85,6 +87,8 @@ try {
     // This block checks both cases safely before calling typeIDToCharID().
     // If neither condition matches, we fall back to 'unknown' to prevent errors.
     var eventType = 'unknown';
+
+    //arguments is a built-in array like object, it contains everything passes into this script when a notifer is triggered
 
     if (arguments && arguments.length > 0) {
         var arg = arguments[0];
