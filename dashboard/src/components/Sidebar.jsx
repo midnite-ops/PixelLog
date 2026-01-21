@@ -1,6 +1,4 @@
-import { useState } from "react";
-
-export default function Sidebar({menu, onclick}) {
+export default function Sidebar({menu, selected, onclick}) {
     
   return (
     <aside className="w-70 h-screen bg-gray-900 text-white p-5 flex flex-col gap-4 col-span-1 fixed left-0 ">
@@ -11,7 +9,7 @@ export default function Sidebar({menu, onclick}) {
           <a
             key={item.name}
             onClick={() => {onclick(item.name)}}
-            className="p-2 rounded hover:bg-gray-700 cursor-pointer"
+            className={`p-2 rounded cursor-pointer ${selected === item.name ? 'bg-gray-700' : ''}`}
           >
             {item.name}
           </a>

@@ -28,7 +28,7 @@ function App() {
 
   return (
     <section className='ml-90 mr-10 h-screen'>
-      <Sidebar menu={menu} onclick={hanldeMenuClick}/>
+      <Sidebar menu={menu} selected={selected} onclick={hanldeMenuClick}/>
       <main className="py-10 w-full">
         {isLogs && (
           <>
