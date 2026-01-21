@@ -1,4 +1,4 @@
-
+import { toDateString } from "../utils/fileStructure"
 export default function Dashboard({ dataLogs }) {
 
     let totalSaves = 0
@@ -16,10 +16,6 @@ export default function Dashboard({ dataLogs }) {
             }
         })
     })
-    const peo = {name: 'biob', fish: 'cat'}
-    const newFish = []
-    newFish.push({...peo, fish: 'shark'})
-    console.log(newFish)
 
     const activityMetrics = [
         {name: 'Files Tracked', value: dataLogs.length},
@@ -48,17 +44,17 @@ export default function Dashboard({ dataLogs }) {
                 <table className="w-full table-auto">
                     <thead>
                         <tr>
-                            <th className="border-b p-4 text-left">File Name</th>
-                            <th className="border-b p-4 text-left">Action</th>
-                            <th className="border-b  p-4 text-left">Date</th>
+                            <th className="border-b p-4 border-gray-300 text-left">File Name</th>
+                            <th className="border-b p-4 border-gray-300 text-left">Action</th>
+                            <th className="border-b p-4 border-gray-300 text-left">Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {dataLogs.map((item, index) => (
                             <tr key={index}>
-                                <td className="border-b p-4">{item.fileName}</td>
-                                <td className="border-b p-4">{item.event[lastItem(item.event)].type}</td>
-                                <td className="border-b p-4">{new Date(item.event[lastItem(item.event)].date).toDateString()}</td>
+                                <td className="border-b border-gray-300 p-4">{item.fileName}</td>
+                                <td className="border-b border-gray-300 p-4">{item.event[lastItem(item.event)].type}</td>
+                                <td className="border-b border-gray-300 p-4">{toDateString(item.event[lastItem(item.event)].date)}</td>
                             </tr>
                         ))}
                     </tbody>

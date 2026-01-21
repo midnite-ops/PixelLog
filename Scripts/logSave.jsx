@@ -152,7 +152,7 @@ try {
         }
     }
 
-    var newEvent = {type: eventType, date: new Date().toString(), history: retouched};
+    var newEvent = {type: eventType, date: new Date().toString(), history: retouched, fileType: app.activeDocument.name.split('.').pop().toLowerCase(),};
 
     //  If file already logged before 
     if (fileIndex >= 0) {
@@ -163,18 +163,16 @@ try {
           
         }
         else if (eventType === 'save') {
-            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
             logs[fileIndex].event.push(newEvent);
             saveToDisk(logs);
            
         }
         else if(eventType === 'Expr'){
-            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
             logs[fileIndex].event.push(modifyObject(newEvent, 'Expr', 'Export'));
             saveToDisk(logs);
         }
         else if(eventType === 'Prnt'){
-            newEvent.fileType = app.activeDocument.name.split('.').pop().toLowerCase();
+
             logs[fileIndex].event.push(modifyObject(newEvent, 'Prnt', 'print'));
             saveToDisk(logs);
         }
@@ -183,7 +181,6 @@ try {
         logs.push({
             fileName: app.activeDocument.name,
             filePath: app.activeDocument.fullName.toString(),
-            fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
             event: [newEvent]
         });
         saveToDisk(logs);
