@@ -37,20 +37,22 @@ function toJSON(obj, indent) {
 }
 
 //modifyObject takes three parameters: source which is the object, olditem which is the value in a the object key you want to replace and newItem is the new value in the object key 
-function modifyObject(source, oldItem, newItem){
-    var target = {}
-    for(var key in source){
-        if(source.hasOwnProperty(key)){
-            if(source[key] === oldItem){
-                target[key] = newItem
-            }else{
-                target[key] = source[key]
-            }
+
+
+// function modifyObject(source, oldItem, newItem){
+//     var target = {}
+//     for(var key in source){
+//         if(source.hasOwnProperty(key)){
+//             if(source[key] === oldItem){
+//                 target[key] = newItem
+//             }else{
+//                 target[key] = source[key]
+//             }
             
-        }
-    }
-    return target
-}
+//         }
+//     }
+//     return target
+// }
 
 // Check if this file already exists in logs
 function FindFileIndex(arr){
@@ -69,6 +71,18 @@ function saveToDisk(logsData){
     logFile.open('w');
     logFile.write(toJSON(logsData));
     logFile.close();
+}
+
+function changeEventName(event){
+    const newName = ''
+    if(event === 'Expr'){
+        newName = 'Export'
+    }else if(event === 'Prnt'){
+        newName = 'Print'
+    }else{
+        return
+    }
+    return newName
 }
 
 // --- Main Script ---
@@ -95,6 +109,7 @@ try {
         }
     }
     var fileIndex = FindFileIndex(logs)
+
     // --- Detect Photoshop event type safely ---
     // Photoshop notifiers pass different kinds of arguments depending on the event.
     // Sometimes it's just the numeric event ID (e.g., 'save', 'Opn ').
@@ -106,6 +121,7 @@ try {
     var eventType = 'unknown';
 
     //arguments is a built-in array like object, it contains everything passes into this script when a notifer is triggered
+
     if (arguments && arguments.length > 0) {
         var arg = arguments[0];
 
@@ -152,10 +168,19 @@ try {
         }
     }
 
-    var newEvent = {type: eventType, date: new Date().toString(), history: retouched, fileType: app.activeDocument.name.split('.').pop().toLowerCase(),};
+    
+
+    var newEvent = {
+        type: changeEventName(eventType) || eventType, 
+        date: new Date().toString(),  
+        history: retouched, 
+        fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
+    };
+
 
     //  If file already logged before 
     if (fileIndex >= 0) {
+        
         //Pushes in a new entry to the newEntry.event array if eventType is Opn
         if(eventType === 'Opn '){
             logs[fileIndex].event.push({type: 'reopened', date: new Date().toString()})
@@ -168,12 +193,12 @@ try {
            
         }
         else if(eventType === 'Expr'){
-            logs[fileIndex].event.push(modifyObject(newEvent, 'Expr', 'Export'));
+            logs[fileIndex].event.push(newEvent);
             saveToDisk(logs);
         }
         else if(eventType === 'Prnt'){
 
-            logs[fileIndex].event.push(modifyObject(newEvent, 'Prnt', 'print'));
+            logs[fileIndex].event.push(newEvent);
             saveToDisk(logs);
         }
         
@@ -187,8 +212,7 @@ try {
         
     }
 
-    
 
-} catch (e) {
-    alert("PixelLog Error: " + e.message);
+} catch (error) {
+    alert("PixelLog Error: " + error.message + eventType);
 }

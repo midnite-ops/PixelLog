@@ -1,8 +1,11 @@
-import { lastItem, toDateString } from "../utils/fileStructure"
+import { lastItem, toDateString, countArrBackwards } from "../utils/fileStructure"
 import { useState, useEffect } from "react"
 import FileActivity from "./FileActivity"
 export default function Files({ dataLogs }) {
-    const files = dataLogs
+
+    const files = countArrBackwards(dataLogs)
+
+    
     const [isActivity, setActivity] = useState(false)
     const [logItem, setLogItem] = useState(null)
 

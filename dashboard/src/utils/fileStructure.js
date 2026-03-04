@@ -2,6 +2,21 @@ export function lastItem(item){
     return item.length - 1
 }
 
+export function countArrBackwards(arr, stop = 0){
+    const newArray = []
+    for(let i = arr.length - 1; i >= 0; i--){
+        const newStop = (arr.length - stop) - 1
+        if(stop > 0){
+            if(newStop === i){
+                break
+            }
+        }
+        
+        newArray.push(arr[i])
+    }
+    return newArray
+}
+
 export function toDateString(date) {
     const d = new Date(date);
     return d.toLocaleDateString();

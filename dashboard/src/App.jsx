@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import FileLoader from './components/FileLoader'
 import Dashboard from './components/Dashboard'
 import Files from './components/Files'
+import Activity from './components/Activity'
 
 function App() {
   const [logs, setLogs] = useState([]);
@@ -34,10 +35,11 @@ function App() {
           <>
             {selected === 'Dashboard' ? <Dashboard dataLogs={logs}/> : ''}
             {selected === 'Files' ? <Files dataLogs={logs}/> : ''}
+            {selected === 'Activity' ? <Activity dataLogs={logs}/> : ''}
           </>
         )}
          
-        {!isLogs && <FileLoader logs={logs} logsClick={handleLogs}/>}
+        {!isLogs && <FileLoader logsClick={handleLogs}/>}
       </main>
     </section>
   )

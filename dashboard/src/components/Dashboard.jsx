@@ -1,4 +1,4 @@
-import { toDateString } from "../utils/fileStructure"
+import { toDateString, countArrBackwards } from "../utils/fileStructure"
 export default function Dashboard({ dataLogs }) {
 
     let totalSaves = 0
@@ -6,6 +6,7 @@ export default function Dashboard({ dataLogs }) {
     function lastItem(item){
         return item.length - 1
     }
+    const files = countArrBackwards(dataLogs, 10)
     //Mapped through the dataLogs to calculate the totalSaves and exports of the whole logs
     dataLogs.map((session) => {
         session.event.map((sessionChild) => {
@@ -50,7 +51,7 @@ export default function Dashboard({ dataLogs }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {dataLogs.map((item, index) => (
+                        {files.map((item, index) => (
                             <tr key={index}>
                                 <td className="border-b border-gray-300 p-4">{item.fileName}</td>
                                 <td className="border-b border-gray-300 p-4">{item.event[lastItem(item.event)].type}</td>
