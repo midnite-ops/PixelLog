@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import FileLoader from './components/FileLoader'
 import Dashboard from './components/Dashboard'
@@ -6,13 +6,28 @@ import Files from './components/Files'
 import Activity from './components/Activity'
 
 function App() {
-  const [logs, setLogs] = useState([]);
   const [isLogs, setIsLogs] = useState(false);
+  const [logs, setLogs] = useState(() => {
+    try{
+      const stored = localStorage.getItem('dataLogs')
+      return stored ? JSON.parse(stored)  : []
+    }catch(error){
+      return[]
+    }
+  });
+
 
   const handleLogs = (bool, data) => {
     setIsLogs(bool)
     setLogs(data)
   }
+
+  useEffect(() => {
+    localStorage.setItem('dataLogs', JSON.stringify(logs))
+    if(logs.length > 0){
+      setIsLogs(true)
+    }
+  }, [logs])
 
   const menu = [
     { name: "Dashboard", path: "/" },

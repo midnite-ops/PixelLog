@@ -1,7 +1,7 @@
-import { countObjectItems } from "../utils/fileStructure"
+import { countArrBackwards, formattedDate, toDateString } from "../utils/fileStructure"
 
 export default function Activity({dataLogs}) {
-    const files = dataLogs
+    const files = countArrBackwards(dataLogs)
   return (
     <section>
         <table className="w-full table-auto">
@@ -13,17 +13,19 @@ export default function Activity({dataLogs}) {
                 </tr>
             </thead>
             <tbody>
-                {files.map((file, index) => (
-                    <tr key={index} className="cursor-pointer hover:bg-gray-100">
-                        {countObjectItems(file.event).map((item) => (
+                {files.map((file, index) => {
+                    const lastEvent = file.event.at(-1)
+                    return(
+                        <tr key={index}>
                             <>
-                                <td className="border-b border-gray-300 p-4 ">{item.date}</td>
-                                <td className="border-b border-gray-300 p-4">{item.type}</td>
+                                <td className="border-b border-gray-300 p-4 ">{formattedDate(lastEvent.date)}</td>
+                                <td className="border-b border-gray-300 p-4">{lastEvent.type}</td>
                                 <td className="border-b border-gray-300 p-4">{file.fileName}</td>
                             </>
-                        ))}
-                    </tr>
-                ))}
+                        </tr>
+                    )
+                    
+                })}
                 
             </tbody>
         </table>
