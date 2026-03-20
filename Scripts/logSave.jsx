@@ -36,6 +36,27 @@ function toJSON(obj, indent) {
     return '""';
 }
 
+//This function takes a parameter which returns the name and contents of the active file and the file path if it exists
+
+function getDocumentInfo(doc){
+    var info = {
+        name: doc.name,
+        isSaved: false,
+        path: null,
+        history: doc.historyStates
+    }
+
+    try{
+        info.path = doc.fullName.toString()
+        info.isSaved = true
+    }catch(e){
+        info.path = null
+        info.isSaved = false
+    }
+
+    return info
+}
+
 //modifyObject takes three parameters: source which is the object, olditem which is the value in a the object key you want to replace and newItem is the new value in the object key 
 
 
@@ -58,7 +79,7 @@ function toJSON(obj, indent) {
 function FindFileIndex(arr){
     var existingIndex = -1;
     for (var i = 0; i < arr.length; i++) {
-        if (arr[i].filePath === app.activeDocument.fullName.toString()) {
+        if (docInfo.path && arr[i].filePath === docInfo.path) {
             existingIndex = i;
             break;
         }
@@ -84,6 +105,8 @@ function changeEventName(event){
     }
     return newName
 }
+
+var docInfo = getDocumentInfo(app.activeDocument)
 
 // --- Main Script ---
 try {
@@ -146,7 +169,7 @@ try {
 
 
     var retouchArray = ['Brush Tool', 'Mixer Brush', 'Layer Via Copy', 'Stamp Visible', 'Clone Stamp'];
-    var historyArray = app.activeDocument.historyStates;
+    var historyArray = docInfo.history;
     var retouched = {};
 
     // Collect all retouch actions in this session
@@ -174,7 +197,7 @@ try {
         type: changeEventName(eventType) || eventType, 
         date: new Date().toString(),  
         history: retouched, 
-        fileType: app.activeDocument.name.split('.').pop().toLowerCase(),
+        fileType: docInfo.name.split('.').pop().toLowerCase(),
     };
 
 
@@ -204,8 +227,8 @@ try {
         
     } else {
         logs.push({
-            fileName: app.activeDocument.name,
-            filePath: app.activeDocument.fullName.toString(),
+            fileName: docInfo.name,
+            filePath: docInfo.path,
             event: [newEvent]
         });
         saveToDisk(logs);
