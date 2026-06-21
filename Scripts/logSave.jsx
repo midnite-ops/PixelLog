@@ -1,7 +1,16 @@
-/**
- * PixelLog — Tracks Photoshop file edits, saves, and reopens
- * Works in ExtendScript (older Photoshop)
- */
+/*
+PixelLog Event Flow
+
+1. Photoshop triggers a notifier event
+2. Determine which event occurred (save, export, print, open)
+3. Collect document information
+4. Analyze Photoshop history states
+5. Generate a JPEG preview
+6. Append event data to pixelLog.json
+7. Save updated logs to disk
+
+The JSON file acts as the source of truth for the PixelLog dashboard.
+*/
 
 // --- JSON Polyfill (because JSON isn't built-in) ---
 function toJSON(obj, indent) {
@@ -36,9 +45,44 @@ function toJSON(obj, indent) {
     return '""';
 }
 
+function savePreview(){
+    // Creates a temporary copy of the active document so PixelLog can generate previews
+    // without modifying the user's original PSD
+    var duplicateDoc = app.activeDocument.duplicate()
+
+    // Merges all layers into a single layer.
+    // Useful because JPEG exports don't preserve Photoshop layers. 
+    duplicateDoc.flatten()
+
+    var previewFolder = new Folder(Folder('~').fsName + '/Documents/PixelLog/previews')
+
+    if(!previewFolder.exists){
+        previewFolder.create()
+    }
+    // Reference to the document currently open and selected in Photoshop which is: app.activeDocument
+    var fileName = app.activeDocument.name
+
+    var jpegFile = new File(previewFolder + "/" + fileName);
+
+    
+    var jpegOptions = new JPEGSaveOptions();
+    jpegOptions.quality = 8;
+
+    // Saves the duplicate document as a JPEG preview.
+    // Third argument (true) tells Photoshop to save a copy instead of replacing the active document.
+    duplicateDoc.saveAs(jpegFile, jpegOptions, true);
+
+    // Closes the temporary duplicate without saving changes.
+    // Prevents the preview-generation process from affecting the original document.
+    duplicateDoc.close(SaveOptions.DONOTSAVECHANGES);
+
+    return jpegFile.fsName;
+}
+
 //This function takes a parameter which returns the name and contents of the active file and the file path if it exists
 
 function getDocumentInfo(doc){
+    
     var info = {
         name: doc.name,
         isSaved: false,
@@ -57,24 +101,6 @@ function getDocumentInfo(doc){
     return info
 }
 
-//modifyObject takes three parameters: source which is the object, olditem which is the value in a the object key you want to replace and newItem is the new value in the object key 
-
-
-// function modifyObject(source, oldItem, newItem){
-//     var target = {}
-//     for(var key in source){
-//         if(source.hasOwnProperty(key)){
-//             if(source[key] === oldItem){
-//                 target[key] = newItem
-//             }else{
-//                 target[key] = source[key]
-//             }
-            
-//         }
-//     }
-//     return target
-// }
-
 // Check if this file already exists in logs
 function FindFileIndex(arr){
     var existingIndex = -1;
@@ -82,7 +108,7 @@ function FindFileIndex(arr){
         if (docInfo.path && arr[i].filePath === docInfo.path) {
             existingIndex = i;
             break;
-        }
+        } 
     }
     return existingIndex
 }
@@ -111,10 +137,16 @@ var docInfo = getDocumentInfo(app.activeDocument)
 // --- Main Script ---
 try {
      // Setup PixelLog file
+    // User's home directory.
+    // macOS example: /Users/mac
+    // Windows example: C:/Users/Jesse
+     // new Folder creates a 
+    var pixelLogFolder = new Folder(Folder('~').fsName + '/Documents/PixelLog')
 
-     // This line creates a new file in the specified directory
-    var systemHome = Folder('~')
-    var logFile = new File(systemHome + '/Documents/pixelLog.json');
+    if(!pixelLogFolder.exists){
+        pixelLogFolder.create()
+    }
+    var logFile = new File(pixelLogFolder + '/pixelLog.json');
     var logs = [];
     
 
@@ -169,6 +201,8 @@ try {
 
 
     var retouchArray = ['Brush Tool', 'Mixer Brush', 'Layer Via Copy', 'Stamp Visible', 'Clone Stamp'];
+    // Array containing all history entries currently visible in Photoshop's History panel.
+    // These entries only exist during the current Photoshop session. 
     var historyArray = docInfo.history;
     var retouched = {};
 
@@ -198,6 +232,7 @@ try {
         date: new Date().toString(),  
         history: retouched, 
         fileType: docInfo.name.split('.').pop().toLowerCase(),
+        previewPath: savePreview()
     };
 
 
@@ -229,7 +264,8 @@ try {
         logs.push({
             fileName: docInfo.name,
             filePath: docInfo.path,
-            event: [newEvent]
+            event: [newEvent],
+            previewPath: savePreview()
         });
         saveToDisk(logs);
         
