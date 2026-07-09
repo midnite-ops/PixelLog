@@ -265,7 +265,6 @@ try {
             fileName: docInfo.name,
             filePath: docInfo.path,
             event: [newEvent],
-            previewPath: savePreview()
         });
         saveToDisk(logs);
         
