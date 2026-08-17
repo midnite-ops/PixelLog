@@ -1,3 +1,4 @@
+import express from 'express';
 import chokidar from "chokidar";
 import fs from "fs";
 import path from "path";
@@ -5,6 +6,7 @@ import os from "os";
 import { uploadService } from "../services/uploadService";
 
 let timer: NodeJS.Timeout;
+const app = express();
 
 const pixelLogFolder = path.join(os.homedir(), "Documents", "PixelLog");
 
@@ -64,6 +66,7 @@ watcher.on("add", async (filePath) => {
 
       // Later:
       // await uploadPreview(filePath, preview);
+      app.use("/previews", express.static(previewFolder))
 
       console.log("Preview read successfully");
     } catch (error) {
