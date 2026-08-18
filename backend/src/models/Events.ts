@@ -1,6 +1,10 @@
 import { Schema } from "mongoose";
 
 const EventSchema = new Schema({
+  id: {
+    type: String,
+    required: true,
+  },
   type: {
     type: String,
     required: true,
@@ -25,4 +29,4 @@ const EventSchema = new Schema({
   },
 });
 
-export default EventSchema
+export default EventSchema;
