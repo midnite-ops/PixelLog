@@ -2,6 +2,7 @@ export interface LogType{
     fileName: string;
     filePath: string | null
     event: {
+        id:string
         type: string,
         date:string
         history: {}

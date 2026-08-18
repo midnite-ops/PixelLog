@@ -4,9 +4,10 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { uploadService } from "../services/uploadService";
+import { LogType } from '../types/logType';
+import { compareChanges } from './compareChanges';
 
 let timer: NodeJS.Timeout;
-const app = express();
 
 const pixelLogFolder = path.join(os.homedir(), "Documents", "PixelLog");
 
@@ -18,6 +19,10 @@ const watcher = chokidar.watch([pixelLogPath, previewFolder], {
   persistent: true,
   ignoreInitial: false,
 });
+let previousLogs:LogType[] = [];
+
+
+previousLogs = JSON.parse(fs.readFileSync(pixelLogPath, 'utf-8'))
 
 // Created the timer because when a file is being updated, it's deleted and gets rewritten, removing its old content and writing a new one, and inbetween that interval the code runs and it might throw an error, hence the timer
 
@@ -57,6 +62,8 @@ watcher.on("add", async (filePath) => {
     return;
   }
 
+  
+
   // A preview was created
   if (filePath.startsWith(previewFolder)) {
     console.log("New preview detected:", filePath);
@@ -66,7 +73,6 @@ watcher.on("add", async (filePath) => {
 
       // Later:
       // await uploadPreview(filePath, preview);
-      app.use("/previews", express.static(previewFolder))
 
       console.log("Preview read successfully");
     } catch (error) {
@@ -91,37 +97,12 @@ watcher.on("change", (filePath) => {
     try {
       const file = fs.readFileSync(filePath, "utf-8");
 
-      const logs = JSON.parse(file);
-
-      await uploadService(logs);
-
-      console.log("PixelLog updated:", filePath);
+      const logs: LogType[] = JSON.parse(file);
+      
+        await uploadService(compareChanges(previousLogs, logs))
+      previousLogs = logs
     } catch (error) {
       console.error("Failed to process PixelLog:", error);
     }
   }, 500);
 });
-
-// watcher
-//   .on("change", (filepath) => {
-//     if (filepath !== pixelLogPath) return null;
-
-//     clearTimeout(timer);
-//     timer = setTimeout(async () => {
-//       try {
-//         const file = fs.readFileSync(filepath, "utf-8");
-//         const logs = JSON.parse(file);
-//         await uploadService(logs);
-//         console.log(`${filepath} changed`, logs);
-//       } catch (error) {
-//         console.log("Failed to process pixelLog:", error);
-//       }
-//     }, 500);
-//   })
-//   .on("add", (filePath) => {
-//     clearTimeout(timer);
-//     const file = fs.readFileSync(filePath, "utf-8");
-//     timer = setTimeout(() => {
-//       console.log(`${file} PixelLog created`);
-//     }, 500);
-//   });
