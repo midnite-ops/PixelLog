@@ -24,7 +24,7 @@ const EventSchema = new Schema({
     type: String,
   },
 
-  preview: {
+  previewPath: {
     type: String,
   },
 });
