@@ -18,3 +18,11 @@ export async function sendLogs(req: Request, res: Response) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+// export async function updateLogs(req: Request, res: Response){
+//   try {
+//     const update = File.findByIdAndUpdate()
+//   } catch (error) {
+    
+//   }
+// }

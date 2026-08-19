@@ -27,6 +27,10 @@ const EventSchema = new Schema({
   previewPath: {
     type: String,
   },
+
+  previewUrl:{
+    type: String
+  }
 });
 
 export default EventSchema;
