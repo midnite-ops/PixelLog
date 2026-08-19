@@ -49,7 +49,11 @@ watcher.on("add", async (filePath) => {
 
         const logs = JSON.parse(file);
 
-        await uploadService(logs);
+        if(logs.length === 1){
+          await uploadService(logs);
+        }
+
+        
 
         console.log("PixelLog updated:", filePath, file);
 
