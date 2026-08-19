@@ -57,7 +57,7 @@ function generateUUID() {
 
 var eventId = generateUUID();
 
-var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/"
+var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/";
 
 function savePreview() {
   // Creates a temporary copy of the active document so PixelLog can generate previews

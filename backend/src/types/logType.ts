@@ -1,4 +1,5 @@
 export interface LogType{
+    id: string
     fileName: string;
     filePath: string | null
     event: {
@@ -8,6 +9,7 @@ export interface LogType{
         history: {}
         fileType: string
         previewPath: string
+        previewUrl: string
     }[];
 }
 
