@@ -8,6 +8,11 @@ const FileSchema = new Schema({
 //     required: true,
 //   },
 
+  documentId: {
+    type: String,
+    required: true
+  },
+
   fileName: {
     type: String,
     required: true,

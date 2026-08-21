@@ -5,6 +5,7 @@ import os from "os";
 
 import { uploadService } from "../services/uploadService";
 import { uploadPreview } from "../services/uploadPreview";
+import { updateLogs } from "../services/updateLogs";
 import { compareChanges } from "./compareChanges";
 
 import { LogType } from "../types/logType";
@@ -12,7 +13,7 @@ import { LogType } from "../types/logType";
 // Used to delay processing of pixelLog.json.
 // This prevents multiple file events from triggering
 // the processing function too quickly.
-let timer: NodeJS.Timeout;
+let timer: NodeJS.Timeout | undefined;
 
 // --------------------------------------------------
 // PIXELLOG PATHS
@@ -50,7 +51,7 @@ const watcher = chokidar.watch([pixelLogPath, previewFolder], {
 //
 // This gives us a baseline that we can later compare
 // against when pixelLog.json changes.
-let previousLogs: LogType[] = JSON.parse(fs.readFileSync(pixelLogPath, "utf8"));
+let previousLogs: LogType[] = [];
 
 // --------------------------------------------------
 // PREVIEW CACHE
@@ -144,59 +145,59 @@ function attachPreviewUrls(logs: LogType[]) {
 // --------------------------------------------------
 
 async function processPixelLog() {
-  try {
-    const logs = readLogs();
+  if (timer) {
+    clearTimeout(timer);
+  }
 
-    attachPreviewUrls(logs);
+  timer = setTimeout(async () => {
+    try {
+      const logs = readLogs();
 
-    if (logs.length === 1) {
+      attachPreviewUrls(logs);
+      const changedDocument = compareChanges(previousLogs, logs);
 
-      await uploadService(logs[0]);
-
-    } else {
-
-      const changes = compareChanges(
-        previousLogs,
-        logs
-      );
-
-      // Nothing changed
-      if (!changes) {
-        console.log("No changes detected");
-        return;
+      if(!changedDocument){
+        console.log('No new changes');
+        return
       }
 
-      await uploadService(changes);
+      if(previousLogs.length < logs.length){
+        console.log('upload')
+        await uploadService(changedDocument)
+      }else{
+        console.log('change')
+        await updateLogs(changedDocument)
+      }
+
+
+      previousLogs = logs;
+
+      console.log("PixelLog processed");
+    } catch (error) {
+      console.error("PixelLog processing failed:", error);
     }
-
-    previousLogs = logs;
-
-    console.log("PixelLog processed");
-
-  } catch (error) {
-    console.error("PixelLog processing failed:", error);
-  }
+  }, 500);
 }
 
 // --------------------------------------------------
 // SCHEDULE PIXELLOG PROCESSING
 // --------------------------------------------------
 
-function schedulePixelLogProcessing() {
-  /**
-   * Cancel the previous timer.
-   *
-   * For example, if Photoshop changes the file
-   * several times within 500ms, we don't want to
-   * process the file multiple times.
-   */
-  clearTimeout(timer);
+// function schedulePixelLogProcessing() {
+//   /**
+//    * Cancel the previous timer.
+//    *
+//    * For example, if Photoshop changes the file
+//    * several times within 500ms, we don't want to
+//    * process the file multiple times.
+//    */
+//   clearTimeout(timer);
 
-  /**
-   * Wait 500ms before processing the log.
-   */
-  timer = setTimeout(processPixelLog, 500);
-}
+//   /**
+//    * Wait 500ms before processing the log.
+//    */
+//   timer = setTimeout(processPixelLog, 500);
+// }
 
 // --------------------------------------------------
 // UPLOAD PREVIEW
@@ -248,24 +249,11 @@ async function handlePreview(filePath: string) {
      * may already exist before the preview upload
      * finishes.
      */
-    schedulePixelLogProcessing();
+    processPixelLog()
   } catch (error) {
     console.error("Preview upload failed:", error);
   }
 }
-
-// --------------------------------------------------
-// DIRECTORY CREATED
-// --------------------------------------------------
-
-watcher.on("addDir", (dirPath) => {
-  console.log("Directory detected:", dirPath);
-
-  // Check specifically for the previews folder
-  if (dirPath === previewFolder) {
-    console.log("Preview folder available");
-  }
-});
 
 // --------------------------------------------------
 // FILE CREATED
@@ -275,25 +263,27 @@ watcher.on("add", async (filePath) => {
   console.log("File added:", filePath);
 
   // ----------------------------------------------
-  // PIXELLOG.JSON CREATED
-  // ----------------------------------------------
-
-  if (filePath === pixelLogPath) {
-    /**
-     * Wait 500ms before processing the log.
-     */
-    schedulePixelLogProcessing();
-
-    return;
-  }
-
-  // ----------------------------------------------
   // PREVIEW CREATED
   // ----------------------------------------------
 
   if (filePath.startsWith(previewFolder)) {
+    console.log('preview added')
     await handlePreview(filePath);
   }
+
+  // ----------------------------------------------
+  // PIXELLOG.JSON CREATED
+  // ----------------------------------------------
+
+  // if (filePath === pixelLogPath) {
+  //   /**
+  //    * Wait 500ms before processing the log.
+  //    */
+  //   console.log('pixelLog Added')
+  //   processPixelLog();
+
+  //   return;
+  // }
 });
 
 // --------------------------------------------------
@@ -306,17 +296,17 @@ watcher.on("change", async (filePath) => {
   // ----------------------------------------------
   // PIXELLOG.JSON CHANGED
   // ----------------------------------------------
+  //The pixelLog.json file is added first, so i need to wait for the preview folder to load so i can attach the previewUrl to the event before sending it to the logs so i'll execute processPixelLog in handlepreview
+  // if (filePath === pixelLogPath) {
+  //   /**
+  //    * pixelLog.json changed.
+  //    *
+  //    * Wait 500ms before processing it.
+  //    */
+  //   processPixelLog();
 
-  if (filePath === pixelLogPath) {
-    /**
-     * pixelLog.json changed.
-     *
-     * Wait 500ms before processing it.
-     */
-    schedulePixelLogProcessing();
-
-    return;
-  }
+  //   return;
+  // }
 
   // ----------------------------------------------
   // PREVIEW CHANGED

@@ -55,9 +55,43 @@ function generateUUID() {
   });
 }
 
-var eventId = generateUUID();
 
 var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/";
+
+XMPMeta.registerNamespace(PIXELOG_NAMESPACE, "pl");
+
+function initializeXMP() {
+  if (ExternalObject.AdobeXMPScript === undefined) {
+    ExternalObject.AdobeXMPScript = new ExternalObject("lib:AdobeXMPScript");
+  }
+}
+
+function getDocumentId(doc) {
+  initializeXMP();
+
+  var xmp = new XMPMeta(doc.xmpMetadata.rawData);
+
+  var existingId = null;
+
+  // Check whether this document already has a PixelLog documentId
+  if (xmp.doesPropertyExist(PIXELOG_NAMESPACE, "documentId")) {
+    existingId = xmp.getProperty(PIXELOG_NAMESPACE, "documentId");
+
+    if (existingId) {
+      return existingId.toString();
+    }
+  }
+
+  // No documentId exists, so create one
+  var newDocumentId = generateUUID();
+
+  xmp.setProperty(PIXELOG_NAMESPACE, "documentId", newDocumentId);
+
+  // Store the new ID inside the actual Photoshop document
+  doc.xmpMetadata.rawData = xmp.serialize();
+
+  return newDocumentId;
+}
 
 function savePreview() {
   // Creates a temporary copy of the active document so PixelLog can generate previews
@@ -68,15 +102,13 @@ function savePreview() {
   // Useful because JPEG exports don't preserve Photoshop layers.
   duplicateDoc.flatten();
 
-  if (ExternalObject.AdobeXMPScript === undefined) {
-    ExternalObject.AdobeXMPScript = new ExternalObject("lib:AdobeXMPScript");
-  }
-
-  XMPMeta.registerNamespace(PIXELOG_NAMESPACE, "pl");
+  initializeXMP()
 
   var xmp = new XMPMeta(duplicateDoc.xmpMetadata.rawData);
 
-  xmp.setProperty("http://pixellog.com/ns/1.0/", "eventId", eventId);
+  xmp.setProperty(PIXELOG_NAMESPACE, "eventId", eventId);
+
+  xmp.setProperty(PIXELOG_NAMESPACE, "documentId",  documentId)
 
   duplicateDoc.xmpMetadata.rawData = xmp.serialize();
 
@@ -128,10 +160,10 @@ function getDocumentInfo(doc) {
 }
 
 // Check if this file already exists in logs
-function FindFileIndex(arr) {
+function FindFileIndex(arr, documentId) {
   var existingIndex = -1;
   for (var i = 0; i < arr.length; i++) {
-    if (docInfo.path && arr[i].filePath === docInfo.path) {
+    if (arr[i].documentId === documentId) {
       existingIndex = i;
       break;
     }
@@ -159,6 +191,10 @@ function changeEventName(event) {
 }
 
 var docInfo = getDocumentInfo(app.activeDocument);
+
+var documentId = getDocumentId(app.activeDocument)
+
+var eventId = generateUUID();
 
 // --- Main Script ---
 try {
@@ -188,7 +224,7 @@ try {
       logs = [];
     }
   }
-  var fileIndex = FindFileIndex(logs);
+  var fileIndex = FindFileIndex(logs, documentId);
 
   // --- Detect Photoshop event type safely ---
   // Photoshop notifiers pass different kinds of arguments depending on the event.
@@ -289,6 +325,7 @@ try {
     }
   } else {
     logs.push({
+      documentId: documentId,
       fileName: docInfo.name,
       filePath: docInfo.path,
       event: [newEvent],

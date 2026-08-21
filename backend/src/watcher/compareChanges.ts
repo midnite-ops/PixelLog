@@ -6,6 +6,7 @@ export const compareChanges = (
 ): LogType | null => {
 
   // A new log was added
+  console.log(previousLogs,newLogs)
   if (previousLogs.length < newLogs.length) {
     return newLogs[newLogs.length - 1];
   }
@@ -23,7 +24,7 @@ export const compareChanges = (
 
     // A new event was added
     if (previousLog.event.length < newLog.event.length) {
-      return newLog;
+      return newLog
     }
   }
 
