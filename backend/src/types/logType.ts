@@ -1,4 +1,5 @@
 export interface LogType{
+    documentId: string
     id: string
     fileName: string;
     filePath: string | null
