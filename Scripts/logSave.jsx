@@ -58,11 +58,12 @@ function generateUUID() {
 
 var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/";
 
-XMPMeta.registerNamespace(PIXELOG_NAMESPACE, "pl");
+
 
 function initializeXMP() {
   if (ExternalObject.AdobeXMPScript === undefined) {
     ExternalObject.AdobeXMPScript = new ExternalObject("lib:AdobeXMPScript");
+    XMPMeta.registerNamespace(PIXELOG_NAMESPACE, "pl");
   }
 }
 
@@ -92,6 +93,7 @@ function getDocumentId(doc) {
 
   return newDocumentId;
 }
+alert('uuuuuu')
 
 function savePreview() {
   // Creates a temporary copy of the active document so PixelLog can generate previews
