@@ -93,7 +93,6 @@ function getDocumentId(doc) {
 
   return newDocumentId;
 }
-alert('uuuuuu')
 
 function savePreview() {
   // Creates a temporary copy of the active document so PixelLog can generate previews
