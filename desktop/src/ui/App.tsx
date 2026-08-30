@@ -1,15 +1,13 @@
 import { useState } from 'react'
-import heroImg from './hero.png'
-import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
     <>
-      <section id="center">
+      <section id="center" className='bg-black'>
         <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
+
          
         </div>
         <div>
