@@ -1,8 +1,12 @@
-import { useState } from "react";
+import type {  Dispatch, SetStateAction } from "react";
 import appLogo from "../assets/PixelLog.png";
 import { Activity, Folder, Loader2, Monitor, Settings, Share } from "lucide-react";
-function Sidebar() {
-  const [activeLink, setActiveLink] = useState("Overview");
+
+interface SidebarProps{
+    currentLink: string
+    setCurrentLink: Dispatch<SetStateAction<string>>;
+}
+function Sidebar({currentLink, setCurrentLink}: SidebarProps) {
   const links = [
     {
       title: "Overview",
@@ -27,11 +31,11 @@ function Sidebar() {
   ];
   return (
     <section className="w-55 py-5 pl-2 border-r border-r-disabledBorder h-full flex flex-col">
-      <header className="flex items-start gap-3 border-b-disabledBorder border-b pb-3">
+      <header className="flex items-start gap-3 border-b-disabledBorder border-b pb-3 pl-2">
         <img src={appLogo} className="w-8 rounded-lg" />
         <div>
-          <p className="font-semibold font-sans">PixelLog</p>
-          <p className="uppercase font-extralighter tracking-[0.2em] text-xs text-disabled">
+          <p className="font-semibold font-sans text-sm mb-1">PixelLog</p>
+          <p className="uppercase font-extralighter tracking-[0.2em] text-[10px] text-disabled">
             Desktop
           </p>
         </div>
@@ -40,8 +44,8 @@ function Sidebar() {
       <ul className="flex gap-5 px-2 pt-5 flex-col flex-1">
         {links.map((link) => (
           <li
-            onClick={() => setActiveLink(link.title)}
-            className={`${activeLink === link.title ? "text-active bg-[#182439] py-2  rounded-lg" : "bg-none rounded-none text-disabled"} text-sm text-mono cursor-pointer flex items-center gap-2 pl-2`}
+            onClick={() => setCurrentLink(link.title)}
+            className={`${currentLink === link.title ? "text-active bg-[#182439] py-2  rounded-lg" : "bg-none rounded-none text-disabled"} text-sm text-mono cursor-pointer flex items-center gap-2 pl-2`}
           >
             <link.icon className="w-4" />
             <p>{link.title}</p>
@@ -49,13 +53,13 @@ function Sidebar() {
         ))}
       </ul>
 
-      <div className="border-t border-t-disabledBorder pt-3">
+      <div className="border-t border-t-disabledBorder pt-3 pl-2">
         <div className="text-connected flex items-center  gap-2">
           <div className="size-2 rounded-full bg-connected"></div>
           <p className="text-xs">Connected</p>
         </div>
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2 ">
             <Loader2 className="w-4 text-disabled"/>
             <p className="font-sans text-xs text-disabled ">studio.pixelLog.io</p>
         </div>
