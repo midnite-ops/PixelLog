@@ -1,17 +1,17 @@
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
-import { Outlet } from "react-router-dom";
 import Header from "./components/Header";
+import Overview from "./pages/Overview";
 
 function App() {
   const [activeLink, setActiveLink] = useState<string>("Overview");
   return (
-    <section className="bg-primary h-screen font-inherit text-white">
-      <div className="flex items-start h-full">
+    <section className="bg-primary h-screen overflow-hidden text-white flex">
         <Sidebar currentLink={activeLink} setCurrentLink={setActiveLink}/>
+      <div className="flex-col items-start h-full flex-1 ">
         <Header activePage={activeLink}/>
-        <main>
-          <Outlet />
+        <main className="overflow-hidden h-full">
+          {activeLink === 'Overview' && <Overview />}
         </main>
       </div>
     </section>
