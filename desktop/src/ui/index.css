@@ -7,7 +7,13 @@
   --color-disabled: #474B67;
   --color-active: #6AABEB;
   --color-connected: #34D399;
+  --color-cardColor: #111526;
   --color-disabledBorder: #FFFFFF12;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+.no-scrollbar{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
