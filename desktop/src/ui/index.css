@@ -13,6 +13,14 @@
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
+
+
+@layer components{
+  .page-spacing{
+    @apply overflow-y-scroll h-full p-6 pb-25 lg:pb-0;
+  }
+}
+
 .no-scrollbar{
   -ms-overflow-style: none;
   scrollbar-width: none;

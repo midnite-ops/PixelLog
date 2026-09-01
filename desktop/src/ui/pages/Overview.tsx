@@ -73,7 +73,7 @@ function Overview() {
     },
   ];
   return (
-    <section className= 'overflow-y-scroll no-scrollbar h-full p-6 pb-25 lg:pb-0'>
+    <section className= 'page-spacing no-scrollbar'>
       <div className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div className="rounded-lg border bg-cardColor border-disabledBorder p-2">
