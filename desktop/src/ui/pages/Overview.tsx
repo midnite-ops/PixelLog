@@ -1,8 +1,9 @@
 import { Clock4, Eye, Share, X } from "lucide-react";
 import UploadCard from "../components/UploadCard";
+import type { UploadItem } from "../../types/upload";
 
 function Overview() {
-  const activeUploads = [
+  const activeUploads: UploadItem[] = [
     {
       title: "CP_reception_0847.psd",
       size: "1.2 MB",

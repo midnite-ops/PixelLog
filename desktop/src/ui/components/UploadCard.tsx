@@ -1,4 +1,4 @@
-type Upload = 'progress' | 'complete' | 'queued' | 'failed';
+import type { Upload } from "../../types/upload";
 
 interface UploadCardProps {
     upload: {

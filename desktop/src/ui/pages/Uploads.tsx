@@ -1,20 +1,21 @@
 import UploadCard from "../components/UploadCard";
+import type { UploadItem } from "../../types/upload";
 function Uploads() {
-  const current = {
+  const current: UploadItem = {
     title: "test.png",
     size: "2.5MB",
-    status: "progress",
+    status: 'progress',
     progress: 50,
   };
 
-  const failedUploads = {
+  const failedUploads: UploadItem = {
     title: "test-100.png",
     size: "2.5MB",
     status: "failed",
     progress: 50,
   };
 
-  const queuedUploads = [
+  const queuedUploads: UploadItem[] = [
     {
       title: "test.png",
       size: "2.5MB",
@@ -35,7 +36,7 @@ function Uploads() {
     },
   ];
 
-  const completedUploads = [
+  const completedUploads: UploadItem[] = [
     {
       title: "test.png",
       size: "2.5MB",
