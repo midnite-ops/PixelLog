@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Overview from "./pages/Overview";
 import Activity from "./pages/Activity";
+import Settings from "./pages/Settings";
 
 function App() {
   const [activeLink, setActiveLink] = useState<string>("Overview");
@@ -14,6 +15,7 @@ function App() {
         <main className="overflow-hidden h-full">
           {activeLink === 'Overview' && <Overview />}
           {activeLink === 'Activity' && <Activity />}
+          {activeLink === 'Settings' && <Settings />}
         </main>
       </div>
     </section>
