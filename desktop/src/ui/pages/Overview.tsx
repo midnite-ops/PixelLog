@@ -1,4 +1,5 @@
 import { Clock4, Eye, Share, X } from "lucide-react";
+import UploadCard from "../components/UploadCard";
 
 function Overview() {
   const activeUploads = [
@@ -6,16 +7,19 @@ function Overview() {
       title: "CP_reception_0847.psd",
       size: "1.2 MB",
       progress: 50,
+      status: "progress",
     },
     {
       title: "File 1",
       size: "500 MB",
       progress: 50,
+      status: "progress",
     },
     {
       title: "CP_portraits_0214.psd",
       size: "1.2 MB",
       progress: 50,
+      status: "progress",
     },
   ];
   const recentActivity = [
@@ -99,29 +103,7 @@ function Overview() {
 
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
           {activeUploads.map((upload, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <div className="size-2 rounded-full bg-active"></div>
-              <div className="w-full">
-                <div className=" flex  justify-between">
-                  <p className="font-light font-mono text-xs">{upload.title}</p>
-                  <p className="text-xs text-disabled font-extralight">
-                    {upload.size}
-                  </p>
-                </div>
-
-                <div className="mt-2">
-                  <div className="bg-disabledBorder h-1 rounded-full">
-                    <div
-                      className="bg-active h-1 rounded-full"
-                      style={{ width: `${upload.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-xs text-disabled ml-3">
-                {upload.progress}%
-              </div>
-            </div>
+            <UploadCard key={index} upload={upload} index={index} />
           ))}
         </div>
 

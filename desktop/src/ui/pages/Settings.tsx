@@ -7,7 +7,7 @@ function Settings() {
     <section className="page-spacing no-scrollbar">
       <div className="w-full lg:w-3/4">
         <div>
-          <h3 className="uppercase tracking-[0.2em] text-disabled font-bold font-sans text-[11px]">
+          <h3 className="subtitle-text">
             Connection
           </h3>
 
@@ -45,7 +45,7 @@ function Settings() {
 
 
         <div className="mt-10">
-          <h3 className="uppercase tracking-[0.2em] text-disabled font-bold font-sans text-[11px]">
+          <h3 className="subtitle-text">
             System
           </h3>
           <div className="mt-5 bg-cardColor py-4 px-5 rounded-lg border border-disabledBorder flex flex-col gap-5">
