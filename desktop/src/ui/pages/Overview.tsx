@@ -8,19 +8,19 @@ function Overview() {
       title: "CP_reception_0847.psd",
       size: "1.2 MB",
       progress: 50,
-      status: "progress",
+      status: "Progress",
     },
     {
       title: "File 1",
       size: "500 MB",
       progress: 50,
-      status: "progress",
+      status: "Progress",
     },
     {
       title: "CP_portraits_0214.psd",
       size: "1.2 MB",
       progress: 50,
-      status: "progress",
+      status: "Progress",
     },
   ];
   const recentActivity = [
@@ -104,7 +104,7 @@ function Overview() {
 
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
           {activeUploads.map((upload, index) => (
-            <UploadCard key={index} upload={upload} index={index} />
+            <UploadCard key={index} upload={upload} index={index} isOverview={true} />
           ))}
         </div>
 

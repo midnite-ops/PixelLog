@@ -1,4 +1,4 @@
-export type Upload = 'progress' | 'complete' | 'queued' | 'failed';
+export type Upload = 'Progress' | 'Complete' | 'Queued' | 'Failed';
 
 export interface UploadItem {
   title: string;
