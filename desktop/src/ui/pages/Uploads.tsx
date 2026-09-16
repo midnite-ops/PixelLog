@@ -1,10 +1,10 @@
 import UploadCard from "../components/UploadCard";
-import type { UploadItem } from "../../types/upload";
+import type { UploadItem } from "../../electron/types/upload";
 function Uploads() {
   const current: UploadItem = {
     title: "test.png",
     size: "2.5MB",
-    status: 'Progress',
+    status: "Progress",
     progress: 50,
   };
 
@@ -65,33 +65,42 @@ function Uploads() {
         </div>
       </div>
 
-        <div className="mt-10">
-            <h3 className="subtitle-text">queued</h3>
-            <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-            {queuedUploads.map((upload, index) => (
-                <UploadCard key={index} upload={upload} index={index} isOverview={false} />
-            ))}
-            </div>
+      <div className="mt-10">
+        <h3 className="subtitle-text">queued</h3>
+        <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
+          {queuedUploads.map((upload, index) => (
+            <UploadCard
+              key={index}
+              upload={upload}
+              index={index}
+              isOverview={false}
+            />
+          ))}
         </div>
+      </div>
 
-        <div className="mt-10">
-            <h3 className="subtitle-text">completed</h3>
-            <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-            {completedUploads.map((upload, index) => (
-                <UploadCard key={index} upload={upload} index={index} isOverview={false} />
-            ))}
-            </div>
+      <div className="mt-10">
+        <h3 className="subtitle-text">completed</h3>
+        <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
+          {completedUploads.map((upload, index) => (
+            <UploadCard
+              key={index}
+              upload={upload}
+              index={index}
+              isOverview={false}
+            />
+          ))}
         </div>
+      </div>
 
-        <div className="mt-10">
-            <h3 className="subtitle-text">failed</h3>
-            <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-                <UploadCard upload={failedUploads} index={0} isOverview={false} />
-            </div>
+      <div className="mt-10">
+        <h3 className="subtitle-text">failed</h3>
+        <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
+          <UploadCard upload={failedUploads} index={0} isOverview={false} />
         </div>
+      </div>
     </section>
   );
 }
-
 
 export default Uploads;
