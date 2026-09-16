@@ -1,6 +1,6 @@
 import { Clock4, Eye, Share, X } from "lucide-react";
 import UploadCard from "../components/UploadCard";
-import type { UploadItem } from "../../types/upload";
+import type { UploadItem } from "../../electron/types/upload";
 
 function Overview() {
   const activeUploads: UploadItem[] = [
@@ -78,7 +78,7 @@ function Overview() {
     },
   ];
   return (
-    <section className= 'page-spacing no-scrollbar'>
+    <section className="page-spacing no-scrollbar">
       <div className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div className="rounded-lg border bg-cardColor border-disabledBorder p-2">
@@ -104,7 +104,12 @@ function Overview() {
 
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
           {activeUploads.map((upload, index) => (
-            <UploadCard key={index} upload={upload} index={index} isOverview={true} />
+            <UploadCard
+              key={index}
+              upload={upload}
+              index={index}
+              isOverview={true}
+            />
           ))}
         </div>
 
@@ -115,18 +120,19 @@ function Overview() {
 
           <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder  flex flex-col gap-5">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex p-4 border-b border-b-disabledBorder items-center gap-3">
+              <div
+                key={index}
+                className="flex p-4 border-b border-b-disabledBorder items-center gap-3"
+              >
                 <div
                   className={`${activity.color} inline-block p-1 px-2 rounded-lg`}
                 >
                   <activity.icon className="w-4" />
                 </div>
                 <div>
-                  <p className="font-sans text-xs mb-1">
-                    {activity.title}
-                  </p>
+                  <p className="font-sans text-xs mb-1">{activity.title}</p>
                   <p className="text-xs text-disabled font-extralight">
-                    {activity.file} 
+                    {activity.file}
                   </p>
                 </div>
                 <p className="text-xs text-disabled font-extralight ml-auto">

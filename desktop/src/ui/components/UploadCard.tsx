@@ -1,4 +1,4 @@
-import type { Upload } from "../../types/upload";
+import type { Upload } from "../../electron/types/upload";
 
 interface UploadCardProps {
   upload: {
@@ -32,7 +32,9 @@ function UploadCard({ upload, index, isOverview }: UploadCardProps) {
             <p className="font-light font-mono text-xs">{upload.title}</p>
 
             <div className="text-xs text-disabled ml-3 flex flex-1 justify-end items-center gap-5">
-              <p className="font-extralight font-sans  text-white/70 text-xs">{upload.title}</p>
+              <p className="font-extralight font-sans  text-white/70 text-xs">
+                {upload.title}
+              </p>
               <p className="text-[10px] text-disabled font-extralight">
                 {upload.size}
               </p>
