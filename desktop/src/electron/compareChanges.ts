@@ -2,32 +2,25 @@ import { LogType } from "./types/logType.js";
 
 export const compareChanges = (
   previousLogs: LogType[],
-  newLogs: LogType[]
-): LogType | null => {
+  newLogs: LogType[],
+): LogType[] | null => {
+  const changedLogs = newLogs.filter((log) => {
+    const previousLog = previousLogs.find(
+      (prevLog) => prevLog.documentId === log.documentId,
+    );
 
-  // A new log was added
-  console.log(previousLogs,newLogs)
-  if (previousLogs.length < newLogs.length) {
-    return newLogs[newLogs.length - 1];
-  }
-
-  // Check whether an existing log received a new event
-  for (let i = 0; i < newLogs.length; i++) {
-
-    const previousLog = previousLogs[i];
-    const newLog = newLogs[i];
-
-    // Make sure the log exists in both versions
-    if (!previousLog || !newLog) {
-      continue;
+    // Completely new object
+    if (!previousLog) {
+      return true;
     }
 
-    // A new event was added
-    if (previousLog.event.length < newLog.event.length) {
-      return newLog
+    // Existing object received a new event
+    if (log.event.length > previousLog.event.length) {
+      return true;
     }
-  }
 
-  // Nothing changed
-  return null;
+    return false;
+  });
+
+  return changedLogs;
 };

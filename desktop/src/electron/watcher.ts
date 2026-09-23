@@ -13,7 +13,7 @@ import { LogType } from "./types/logType.js";
 // Used to delay processing of pixelLog.json.
 // This prevents multiple file events from triggering
 // the processing function too quickly.
-let timer: NodeJS.Timeout | undefined;
+let processTimer: NodeJS.Timeout | undefined;
 
 // --------------------------------------------------
 // PIXELLOG PATHS
@@ -27,6 +27,8 @@ const previewFolder = path.join(pixelLogFolder, "previews");
 
 // Path to the main PixelLog JSON file
 const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
+
+const failedPreviewFolder = path.join(pixelLogFolder, "failed-previews")
 
 // --------------------------------------------------
 // FILE WATCHER
@@ -54,26 +56,34 @@ const watcher = chokidar.watch([pixelLogPath, previewFolder], {
 let previousLogs: LogType[] = [];
 
 // --------------------------------------------------
-// PREVIEW CACHE
-// --------------------------------------------------
-
-/**
- * Temporarily stores uploaded preview URLs.
- *
- * Example:
- *
- * preview-123
- *      ↓
- * https://res.cloudinary.com/...
- *
- * The key is the preview filename WITHOUT
- * the file extension.
- */
-const previewCache = new Map<string, string>();
-
-// --------------------------------------------------
 // READ PIXELLOG
 // --------------------------------------------------
+async function moveFailedPreview(filePath: string) {
+  try {
+    await fs.promises.mkdir(failedPreviewFolder, {
+      recursive: true,
+    });
+
+    const fileName = path.basename(filePath);
+
+    const failedPath = path.join(
+      failedPreviewFolder,
+      fileName
+    );
+
+    await fs.promises.rename(
+      filePath,
+      failedPath
+    );
+
+    console.log("Moved failed preview:", failedPath);
+  } catch (error) {
+    console.error(
+      "Failed to move preview:",
+      error
+    );
+  }
+}
 
 function readLogs(): LogType[] {
   // Read the latest version of pixelLog.json
@@ -83,61 +93,48 @@ function readLogs(): LogType[] {
   return JSON.parse(file);
 }
 
-// --------------------------------------------------
-// GET PREVIEW KEY
-// --------------------------------------------------
+const logs = readLogs();
 
-function getPreviewKey(previewPath: string): string {
-  /**
-   * Converts:
-   *
-   * /PixelLog/previews/preview-123.jpg
-   *
-   * into:
-   *
-   * preview-123
-   *
-   * Keeping this logic in one function makes sure
-   * the cache uses the same key everywhere.
-   */
-  return path.basename(previewPath, path.extname(previewPath));
-}
+let newFiles: string[] = [];
 
 // --------------------------------------------------
 // ATTACH CLOUDINARY URLS TO EVENTS
 // --------------------------------------------------
 
-function attachPreviewUrls(logs: LogType[]) {
-  // Loop through every log
-  logs.forEach((log) => {
-    // Loop through every event in that log
-    log.event.forEach((event) => {
-      // Make sure this event actually has
-      // a preview path
-      if (!event.previewPath) return;
+async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
+  const uploaded:LogType[] = []
+  for (const filePath of newFiles) {
+    try {
+      for (const log of logs) {
+        const event = log.event.find(
+          (event) => event.previewPath + ".jpg" === filePath
+        );
 
-      // Get the same key that we used when
-      // storing the uploaded preview
-      const key = getPreviewKey(event.previewPath);
+        if (!event) {
+          continue;
+        }
 
-      // Look for the Cloudinary URL
-      // inside our temporary cache
-      const previewUrl = previewCache.get(key);
+        const previewUrl = await uploadPreview(filePath);
 
-      // If the preview hasn't been uploaded yet,
-      // leave the event unchanged.
-      if (!previewUrl) return;
+        if (!previewUrl) {
+          throw new Error("Preview upload returned no URL");
+        }
 
-      // Attach the Cloudinary URL to the event
-      event.previewUrl = previewUrl;
+        event.previewUrl = previewUrl;
 
-      // We no longer need this cached URL
-      // because it has now been attached.
-      previewCache.delete(key);
+        uploaded.push(log)
 
-      console.log(`Preview URL attached: ${key}`);
-    });
-  });
+        console.log("Attached url:", filePath);
+
+        break;
+      }
+    } catch (error) {
+      console.error("Preview upload failed:", filePath);
+
+      await moveFailedPreview(filePath);
+    }
+  }
+  return uploaded
 }
 
 // --------------------------------------------------
@@ -145,30 +142,35 @@ function attachPreviewUrls(logs: LogType[]) {
 // --------------------------------------------------
 
 async function processPixelLog() {
-  if (timer) {
-    clearTimeout(timer);
+  if (processTimer) {
+    clearTimeout(processTimer);
   }
 
-  timer = setTimeout(async () => {
+  processTimer = setTimeout(async () => {
+    console.log('start')
     try {
       const logs = readLogs();
 
-      attachPreviewUrls(logs);
-      const changedDocument = compareChanges(previousLogs, logs);
+      const changedDocuments = compareChanges(previousLogs, logs);
 
-      if(!changedDocument){
-        console.log('No new changes');
-        return
+      if (!changedDocuments || changedDocuments.length === 0) {
+        console.log("No new changes");
+        return;
       }
 
-      if(previousLogs.length < logs.length){
-        console.log('upload')
-        await uploadService(changedDocument)
-      }else{
-        console.log('change')
-        await updateLogs(changedDocument)
-      }
+      const uploadedLogs = await uploadPreviewDoc(changedDocuments);
 
+      newFiles = []
+
+      if (previousLogs.length < logs.length) {
+        console.log("upload");
+        for (const document of uploadedLogs) {
+          await uploadService(document);
+        }
+      } else {
+        console.log("change");
+        await updateLogs(uploadedLogs[0]);
+      }
 
       previousLogs = logs;
 
@@ -176,83 +178,7 @@ async function processPixelLog() {
     } catch (error) {
       console.error("PixelLog processing failed:", error);
     }
-  }, 500);
-}
-
-// --------------------------------------------------
-// SCHEDULE PIXELLOG PROCESSING
-// --------------------------------------------------
-
-// function schedulePixelLogProcessing() {
-//   /**
-//    * Cancel the previous timer.
-//    *
-//    * For example, if Photoshop changes the file
-//    * several times within 500ms, we don't want to
-//    * process the file multiple times.
-//    */
-//   clearTimeout(timer);
-
-//   /**
-//    * Wait 500ms before processing the log.
-//    */
-//   timer = setTimeout(processPixelLog, 500);
-// }
-
-// --------------------------------------------------
-// UPLOAD PREVIEW
-// --------------------------------------------------
-
-async function handlePreview(filePath: string) {
-  try {
-    console.log("Processing preview:", filePath);
-
-    // Read the image from disk
-    const preview = fs.readFileSync(filePath);
-
-    /**
-     * Convert the image to Base64.
-     *
-     * Example:
-     *
-     * preview.jpg
-     *      ↓
-     * Base64
-     *      ↓
-     * data:image/jpeg;base64,...
-     */
-    const base64Preview = `data:image/jpeg;base64,${preview.toString(
-      "base64",
-    )}`;
-
-    // Upload the preview to Cloudinary
-    const previewUrl = await uploadPreview(base64Preview);
-
-    // Get the filename without extension
-    //
-    // preview-123.jpg
-    //      ↓
-    // preview-123
-    const key = getPreviewKey(filePath);
-
-    // Store the Cloudinary URL temporarily
-    // so attachPreviewUrls() can find it.
-    previewCache.set(key, previewUrl);
-
-    console.log(`Preview uploaded: ${key}`);
-
-    /**
-     * Process the PixelLog after the preview
-     * has successfully been uploaded.
-     *
-     * This is important because the JSON event
-     * may already exist before the preview upload
-     * finishes.
-     */
-    processPixelLog()
-  } catch (error) {
-    console.error("Preview upload failed:", error);
-  }
+  }, 2000);
 }
 
 // --------------------------------------------------
@@ -267,23 +193,10 @@ watcher.on("add", async (filePath) => {
   // ----------------------------------------------
 
   if (filePath.startsWith(previewFolder)) {
-    console.log('preview added')
-    await handlePreview(filePath);
+    console.log("preview added");
+    newFiles.push(filePath);
+    processPixelLog();
   }
-
-  // ----------------------------------------------
-  // PIXELLOG.JSON CREATED
-  // ----------------------------------------------
-
-  // if (filePath === pixelLogPath) {
-  //   /**
-  //    * Wait 500ms before processing the log.
-  //    */
-  //   console.log('pixelLog Added')
-  //   processPixelLog();
-
-  //   return;
-  // }
 });
 
 // --------------------------------------------------
@@ -291,27 +204,6 @@ watcher.on("add", async (filePath) => {
 // --------------------------------------------------
 
 watcher.on("change", async (filePath) => {
-  console.log("File changed:", filePath);
-
-  // ----------------------------------------------
-  // PIXELLOG.JSON CHANGED
-  // ----------------------------------------------
-  //The pixelLog.json file is added first, so i need to wait for the preview folder to load so i can attach the previewUrl to the event before sending it to the logs so i'll execute processPixelLog in handlepreview
-  // if (filePath === pixelLogPath) {
-  //   /**
-  //    * pixelLog.json changed.
-  //    *
-  //    * Wait 500ms before processing it.
-  //    */
-  //   processPixelLog();
-
-  //   return;
-  // }
-
-  // ----------------------------------------------
-  // PREVIEW CHANGED
-  // ----------------------------------------------
-
   if (filePath.startsWith(previewFolder)) {
     /**
      * A preview already exists but its contents
@@ -319,6 +211,6 @@ watcher.on("change", async (filePath) => {
      *
      * Upload the new version to Cloudinary.
      */
-    await handlePreview(filePath);
+    processPixelLog();
   }
 });

@@ -1,5 +1,7 @@
+import cloudinary from "../services/cloudinary";
 import { Response, Request } from "express";
 import File from "../models/File";
+import { UploadApiResponse } from "cloudinary";
 
 export async function sendLogs(req: Request, res: Response) {
   console.log(req.body);
@@ -43,5 +45,47 @@ export async function updateLogs(req: Request, res: Response) {
   } catch (error) {
     console.error("error in the updateLogs controller", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function uploadPreview(req: Request, res: Response) {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        message: "No preview uploaded",
+      });
+    }
+
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "pixellog/previews",
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (!result) {
+            reject(new Error("Cloudinary did not return a result"));
+          } else {
+            resolve(result);
+          }
+        },
+      );
+
+      stream.end(file.buffer);
+    });
+
+    res.json({
+      message: "Preview uploaded successfully",
+      url: result.secure_url,
+    });
+  } catch (error) {
+    console.error("Cloudinary upload failed:", error);
+
+    res.status(500).json({
+      message: "Preview upload failed",
+    });
   }
 }

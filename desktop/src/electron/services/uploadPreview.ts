@@ -1,18 +1,27 @@
-import { v2 as cloudinary } from "cloudinary";
-import "../config/env";
+import axios from "axios";
+import fs from "fs";
+import FormData from "form-data";
+import { API_URL } from "./api.js";
 
-cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+export const uploadPreview = async (previewPath: string) => {
+  try {
+    const formData = new FormData();
+
+    formData.append("preview", fs.createReadStream(previewPath));
+
+    const response = await axios.post(`${API_URL}/upload-preview`, formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
 
-export const uploadPreview = async (preview: string) => {
+    console.log(response.data);
 
-    const result = await cloudinary.uploader.upload(preview, {
-      folder: "pixelLog/previews",
-    });
-  
-
-  return result.secure_url
+    return response.data.url;
+  } catch (error) {
+    console.error("Failed to upload preview:", error);
+    throw error;
+  }
 };
