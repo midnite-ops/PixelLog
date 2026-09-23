@@ -1,10 +1,11 @@
 import axios from "axios";
-import { LogType } from "../types/logType";
+import { LogType } from "../types/logType.js";
+import { API_URL } from "./api.js";
 
 export const uploadService = async (logs: LogType) => {
   try {
     const response = await axios.post(
-      "http://localhost:3000/pixelLog/logs",
+      `${API_URL}/logs`,
       logs,
     );
     console.log(response.data);
