@@ -28,7 +28,7 @@ const previewFolder = path.join(pixelLogFolder, "previews");
 // Path to the main PixelLog JSON file
 const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
 
-const failedPreviewFolder = path.join(pixelLogFolder, "failed-previews")
+const failedPreviewFolder = path.join(pixelLogFolder, "failed-previews");
 
 // --------------------------------------------------
 // FILE WATCHER
@@ -66,22 +66,13 @@ async function moveFailedPreview(filePath: string) {
 
     const fileName = path.basename(filePath);
 
-    const failedPath = path.join(
-      failedPreviewFolder,
-      fileName
-    );
+    const failedPath = path.join(failedPreviewFolder, fileName);
 
-    await fs.promises.rename(
-      filePath,
-      failedPath
-    );
+    await fs.promises.rename(filePath, failedPath);
 
     console.log("Moved failed preview:", failedPath);
   } catch (error) {
-    console.error(
-      "Failed to move preview:",
-      error
-    );
+    console.error("Failed to move preview:", error);
   }
 }
 
@@ -102,12 +93,12 @@ let newFiles: string[] = [];
 // --------------------------------------------------
 
 async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
-  const uploaded:LogType[] = []
+  const uploaded: LogType[] = [];
   for (const filePath of newFiles) {
     try {
       for (const log of logs) {
         const event = log.event.find(
-          (event) => event.previewPath + ".jpg" === filePath
+          (event) => event.previewPath + ".jpg" === filePath,
         );
 
         if (!event) {
@@ -122,7 +113,7 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
 
         event.previewUrl = previewUrl;
 
-        uploaded.push(log)
+        uploaded.push(log);
 
         console.log("Attached url:", filePath);
 
@@ -134,7 +125,7 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
       await moveFailedPreview(filePath);
     }
   }
-  return uploaded
+  return uploaded;
 }
 
 // --------------------------------------------------
@@ -147,7 +138,7 @@ async function processPixelLog() {
   }
 
   processTimer = setTimeout(async () => {
-    console.log('start')
+    console.log("start");
     try {
       const logs = readLogs();
 
@@ -160,12 +151,25 @@ async function processPixelLog() {
 
       const uploadedLogs = await uploadPreviewDoc(changedDocuments);
 
-      newFiles = []
+      process.send?.({
+        queuedFiles: newFiles,
+      });
+
+      newFiles = [];
 
       if (previousLogs.length < logs.length) {
         console.log("upload");
         for (const document of uploadedLogs) {
+          process.send?.({
+            type: "upload-start",
+            file: document.fileName,
+          });
           await uploadService(document);
+
+          process.send?.({
+            type: "upload-complete",
+            file: document.fileName,
+          });
         }
       } else {
         console.log("change");

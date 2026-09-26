@@ -7,6 +7,9 @@ import Settings from "./pages/Settings";
 import Uploads from "./pages/Uploads";
 
 function App() {
+  window.pixelLog.uploadStatus((data) => {
+    console.log(data.queuedFiles)
+  })
   const [activeLink, setActiveLink] = useState<string>("Overview");
   return (
     <section className="bg-primary h-screen overflow-hidden text-white flex">
