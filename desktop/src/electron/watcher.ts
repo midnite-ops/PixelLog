@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-import { uploadService } from "./services/uploadService.js";
+import { uploadLogs } from "./services/uploadLogs.js";
 import { uploadPreview } from "./services/uploadPreview.js";
 import { updateLogs } from "./services/updateLogs.js";
 import { compareChanges } from "./compareChanges.js";
@@ -27,8 +27,6 @@ const previewFolder = path.join(pixelLogFolder, "previews");
 
 // Path to the main PixelLog JSON file
 const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
-
-const failedPreviewFolder = path.join(pixelLogFolder, "failed-previews");
 
 // --------------------------------------------------
 // FILE WATCHER
@@ -58,23 +56,6 @@ let previousLogs: LogType[] = [];
 // --------------------------------------------------
 // READ PIXELLOG
 // --------------------------------------------------
-async function moveFailedPreview(filePath: string) {
-  try {
-    await fs.promises.mkdir(failedPreviewFolder, {
-      recursive: true,
-    });
-
-    const fileName = path.basename(filePath);
-
-    const failedPath = path.join(failedPreviewFolder, fileName);
-
-    await fs.promises.rename(filePath, failedPath);
-
-    console.log("Moved failed preview:", failedPath);
-  } catch (error) {
-    console.error("Failed to move preview:", error);
-  }
-}
 
 function readLogs(): LogType[] {
   // Read the latest version of pixelLog.json
@@ -84,7 +65,38 @@ function readLogs(): LogType[] {
   return JSON.parse(file);
 }
 
-const logs = readLogs();
+function readRetryQueue(): { logs: LogType[] } {
+  const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
+  const file = fs.readFileSync(retryQueue, "utf8");
+
+  return JSON.parse(file);
+}
+// Read the current retryQueue file and overwrite it with the new updated data
+function deleteFromRetryQueue(doc: LogType) {
+  const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
+  const file = JSON.parse(fs.readFileSync(retryQueue, "utf8"));
+  file.logs = file.logs.filter((log: string) => log !== doc.documentId);
+
+  fs.writeFileSync(retryQueue, JSON.stringify(file, null, 2));
+}
+
+function addToRetryQueue(doc: LogType) {
+  const retryQueuePath = path.join(pixelLogFolder, "retryQueue.json");
+
+  const retryQueue = readRetryQueue();
+
+  const index = retryQueue.logs.findIndex(
+    (log) => log.documentId === doc.documentId,
+  );
+
+  if (index !== -1) {
+    retryQueue.logs[index] = doc;
+  } else {
+    retryQueue.logs.push(doc);
+  }
+
+  fs.writeFileSync(retryQueuePath, JSON.stringify(retryQueue, null, 2));
+}
 
 let newFiles: string[] = [];
 
@@ -94,7 +106,14 @@ let newFiles: string[] = [];
 
 async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
   const uploaded: LogType[] = [];
-  for (const filePath of newFiles) {
+  const updatedFiles = newFiles.map((file) => {
+  const extension = path.extname(file);
+
+  return file.slice(0, -extension.length) + extension.toLowerCase();
+});
+  for (const filePath of updatedFiles) {
+    let failedLog: LogType | undefined;
+
     try {
       for (const log of logs) {
         const event = log.event.find(
@@ -104,6 +123,9 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
         if (!event) {
           continue;
         }
+        console.log('yes', event.previewPath)
+
+        failedLog = log;
 
         const previewUrl = await uploadPreview(filePath);
 
@@ -122,12 +144,43 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
     } catch (error) {
       console.error("Preview upload failed:", filePath);
 
-      await moveFailedPreview(filePath);
+      if (failedLog) {
+        addToRetryQueue(failedLog);
+      }
     }
   }
+
   return uploaded;
 }
 
+//PROCESS RETRY QUEUE
+async function processRetryQueue() {
+  const retryQueue = readRetryQueue();
+
+  for (const log of retryQueue.logs) {
+    try {
+      const event = log.event[0];
+
+      if (!event.previewUrl) {
+        const preview = await uploadPreview(event.previewPath);
+
+        if (!preview) {
+          throw new Error("Preview upload returned no URL");
+        }
+
+        event.previewUrl = preview;
+        
+      }
+      await uploadLogs(log);
+
+      deleteFromRetryQueue(log);
+
+      console.log("Retry successful:", log.documentId);
+    } catch (error) {
+      console.error("Retry failed:", log.documentId, error);
+    }
+  }
+}
 // --------------------------------------------------
 // PROCESS PIXELLOG
 // --------------------------------------------------
@@ -139,6 +192,7 @@ async function processPixelLog() {
 
   processTimer = setTimeout(async () => {
     console.log("start");
+
     try {
       const logs = readLogs();
 
@@ -148,32 +202,45 @@ async function processPixelLog() {
         console.log("No new changes");
         return;
       }
+      console.log('changedDocuments')
 
       const uploadedLogs = await uploadPreviewDoc(changedDocuments);
 
-      process.send?.({
-        queuedFiles: newFiles,
-      });
-
       newFiles = [];
+
+      console.log(uploadedLogs)
 
       if (previousLogs.length < logs.length) {
         console.log("upload");
-        for (const document of uploadedLogs) {
-          process.send?.({
-            type: "upload-start",
-            file: document.fileName,
-          });
-          await uploadService(document);
 
-          process.send?.({
-            type: "upload-complete",
-            file: document.fileName,
-          });
+        for (const document of uploadedLogs) {
+          console.log(document)
+          try {
+            await uploadLogs(document);
+          } catch (error) {
+            console.error(
+              "Database upload failed:",
+              document.documentId,
+              error,
+            );
+
+            addToRetryQueue(document);
+          }
         }
       } else {
         console.log("change");
-        await updateLogs(uploadedLogs[0]);
+
+        try {
+          await updateLogs(uploadedLogs[0]);
+        } catch (error) {
+          console.error(
+            "Database update failed:",
+            uploadedLogs[0].documentId,
+            error,
+          );
+
+          addToRetryQueue(uploadedLogs[0]);
+        }
       }
 
       previousLogs = logs;
