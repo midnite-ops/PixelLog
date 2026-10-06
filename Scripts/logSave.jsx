@@ -129,6 +129,8 @@ function attatchId() {
     writeDocumentIdToFile(app.activeDocument, documentId);
     return documentId;
   }
+
+  return documentId
 }
 
 function savePreview() {
