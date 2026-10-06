@@ -239,6 +239,7 @@ try {
     pixelLogFolder.create();
   }
   var logFile = new File(pixelLogFolder + "/pixelLog.json");
+  var retryQueue = new File(pixelLogFolder + "/retryQueue.json");
   var logs = [];
 
   // Read old logs (if file exists)

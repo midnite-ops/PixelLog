@@ -65,7 +65,7 @@ function readLogs(): LogType[] {
   return JSON.parse(file);
 }
 
-function readRetryQueue(): { logs: LogType[] } {
+function readRetryQueue(): LogType[]  {
   const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
   const file = fs.readFileSync(retryQueue, "utf8");
 
@@ -85,14 +85,14 @@ function addToRetryQueue(doc: LogType) {
 
   const retryQueue = readRetryQueue();
 
-  const index = retryQueue.logs.findIndex(
+  const index = retryQueue.findIndex(
     (log) => log.documentId === doc.documentId,
   );
 
   if (index !== -1) {
-    retryQueue.logs[index] = doc;
+    retryQueue[index] = doc;
   } else {
-    retryQueue.logs.push(doc);
+    retryQueue.push(doc);
   }
 
   fs.writeFileSync(retryQueuePath, JSON.stringify(retryQueue, null, 2));
@@ -157,7 +157,7 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
 async function processRetryQueue() {
   const retryQueue = readRetryQueue();
 
-  for (const log of retryQueue.logs) {
+  for (const log of retryQueue) {
     try {
       const event = log.event[0];
 
