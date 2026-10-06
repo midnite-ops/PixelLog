@@ -55,10 +55,7 @@ function generateUUID() {
   });
 }
 
-
 var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/";
-
-
 
 function initializeXMP() {
   if (ExternalObject.AdobeXMPScript === undefined) {
@@ -67,31 +64,71 @@ function initializeXMP() {
   }
 }
 
-function getDocumentId(doc) {
+//Get the documentID, if it does not exist, return null
+function getDocumentId(filePath) {
   initializeXMP();
 
-  var xmp = new XMPMeta(doc.xmpMetadata.rawData);
+  var xmpFile = new XMPFile(filePath, XMPConst.UNKNOWN, XMPConst.OPEN_FOR_READ);
 
-  var existingId = null;
+  var xmp = xmpFile.getXMP();
+  var documentId = null;
 
-  // Check whether this document already has a PixelLog documentId
-  if (xmp.doesPropertyExist(PIXELOG_NAMESPACE, "documentId")) {
-    existingId = xmp.getProperty(PIXELOG_NAMESPACE, "documentId");
+  if (xmp) {
+    if (xmp.doesPropertyExist(PIXELOG_NAMESPACE, "documentId")) {
+      var value = xmp.getProperty(PIXELOG_NAMESPACE, "documentId");
 
-    if (existingId) {
-      return existingId.toString();
+      if (value) {
+        documentId = value.toString();
+      }
     }
   }
 
-  // No documentId exists, so create one
-  var newDocumentId = generateUUID();
+  xmpFile.closeFile();
 
-  xmp.setProperty(PIXELOG_NAMESPACE, "documentId", newDocumentId);
+  return documentId;
+}
 
-  // Store the new ID inside the actual Photoshop document
-  doc.xmpMetadata.rawData = xmp.serialize();
+//Saves the documentId to the physical file
+function writeDocumentIdToFile(doc, documentId) {
+  initializeXMP();
 
-  return newDocumentId;
+  var filePath = doc.fullName.fsName;
+
+  var xmpFile = new XMPFile(
+    filePath,
+    XMPConst.UNKNOWN,
+    XMPConst.OPEN_FOR_UPDATE,
+  );
+
+  var xmp = xmpFile.getXMP();
+
+  if (!xmp) {
+    xmp = new XMPMeta();
+  }
+
+  xmp.setProperty(PIXELOG_NAMESPACE, "documentId", documentId);
+
+  if (!xmpFile.canPutXMP(xmp)) {
+    xmpFile.closeFile();
+    throw new Error("Cannot write XMP to this file.");
+  }
+
+  xmpFile.putXMP(xmp);
+
+  alert("Successfully attached the id");
+
+  xmpFile.closeFile(XMPConst.CLOSE_UPDATE_SAFELY);
+}
+
+function attatchId() {
+  var documentId = getDocumentId(app.activeDocument.fullName.fsName);
+  if (!documentId) {
+    documentId = generateUUID();
+    alert(documentId);
+
+    writeDocumentIdToFile(app.activeDocument, documentId);
+    return documentId;
+  }
 }
 
 function savePreview() {
@@ -102,16 +139,6 @@ function savePreview() {
   // Merges all layers into a single layer.
   // Useful because JPEG exports don't preserve Photoshop layers.
   duplicateDoc.flatten();
-
-  initializeXMP()
-
-  var xmp = new XMPMeta(duplicateDoc.xmpMetadata.rawData);
-
-  xmp.setProperty(PIXELOG_NAMESPACE, "eventId", eventId);
-
-  xmp.setProperty(PIXELOG_NAMESPACE, "documentId",  documentId)
-
-  duplicateDoc.xmpMetadata.rawData = xmp.serialize();
 
   var previewFolder = new Folder(
     Folder("~").fsName + "/Documents/PixelLog/previews",
@@ -193,7 +220,7 @@ function changeEventName(event) {
 
 var docInfo = getDocumentInfo(app.activeDocument);
 
-var documentId = getDocumentId(app.activeDocument)
+var documentId = getDocumentId(app.activeDocument.fullName.fsName);
 
 var eventId = generateUUID();
 
@@ -326,7 +353,7 @@ try {
     }
   } else {
     logs.push({
-      documentId: documentId,
+      documentId: attatchId(),
       fileName: docInfo.name,
       filePath: docInfo.path,
       event: [newEvent],
