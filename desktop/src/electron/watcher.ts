@@ -109,10 +109,7 @@ const syncUploadStatus: {failed: string[], message:string, file:string, queued: 
 };
 
 export function uploadStatus(mainWindow: BrowserWindow) {
-  setInterval(() => {
-    mainWindow.webContents.send("upload-status", syncUploadStatus);
-  }, 5000)
-  
+   mainWindow.webContents.send("upload-status", syncUploadStatus);
 }
 export function getQueuedFiles(mainWindow: BrowserWindow){
    mainWindow.webContents.send("queuedFiles", ['fish'])

@@ -5,34 +5,35 @@ function Uploads() {
     title: "test.png",
     size: "2.5MB",
     status: "Progress",
-    progress: 50,
+    message: 'Uploading Preview'
   };
 
   const failedUploads: UploadItem = {
     title: "test-100.png",
     size: "2.5MB",
-    status: "Failed",
-    progress: 50,
+    status: "Progress",
+    message: 'Uploading Preview'
+    
   };
-
+  
   const queuedUploads: UploadItem[] = [
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Queued",
-      progress: 50,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Queued",
-      progress: 50,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Queued",
-      progress: 50,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
   ];
 
@@ -40,20 +41,20 @@ function Uploads() {
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Complete",
-      progress: 100,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Complete",
-      progress: 100,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
     {
       title: "test.png",
       size: "2.5MB",
-      status: "Complete",
-      progress: 100,
+      status: "Progress",
+      message: 'Uploading Preview'
     },
   ];
   return (

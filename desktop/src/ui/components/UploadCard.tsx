@@ -1,10 +1,11 @@
+import { Loader } from "lucide-react";
 import type { Upload } from "../../electron/types/upload";
 
 interface UploadCardProps {
   upload: {
     title: string;
     size: string;
-    progress: number;
+    message: string;
     status?: Upload;
   };
   index: number;
@@ -13,51 +14,32 @@ interface UploadCardProps {
 
 function UploadCard({ upload, index, isOverview }: UploadCardProps) {
   return (
-    <div key={index} className="flex items-center gap-3">
+    <div
+      key={index}
+      className={`flex items-center gap-3 ${isOverview ? "border-b border-disabledBorder last:border-b-0 pb-5 " : ""}`}
+    >
       <div
         className={`size-2 rounded-full ${upload.status === "Progress" ? "bg-active" : upload.status === "Complete" ? "bg-connected" : upload.status === "Queued" ? "bg-disabled" : "bg-red-500/80"}`}
       ></div>
       <div className="w-full">
-        {isOverview && (
-          <div className=" flex  justify-between">
-            <p className="font-light font-mono text-xs">{upload.title}</p>
-            <p className="text-xs text-disabled font-extralight">
+        <div className="flex justify-between ">
+          <p className="font-light font-mono text-xs">{upload.title}</p>
+
+          <div className="text-xs text-disabled ml-3 flex flex-1 justify-end items-center ">
+            <p className="text-[10px] text-disabled font-extralight">
               {upload.size}
             </p>
           </div>
-        )}
-
-        {!isOverview && (
-          <div className="flex justify-between ">
-            <p className="font-light font-mono text-xs">{upload.title}</p>
-
-            <div className="text-xs text-disabled ml-3 flex flex-1 justify-end items-center gap-5">
-              <p className="font-extralight font-sans  text-white/70 text-xs">
-                {upload.title}
-              </p>
-              <p className="text-[10px] text-disabled font-extralight">
-                {upload.size}
-              </p>
-
-              <p className="ml-5">{upload.status}</p>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div className="mt-2">
-          <div className="bg-disabledBorder h-1 rounded-full">
-            <div
-              className="bg-active h-1 rounded-full"
-              style={{ width: `${upload.progress}%` }}
-            ></div>
+          <div className=" flex items-center gap-2  text-disabled text-sm">
+            {upload.message} from
+            /Users/Documents/Previews/CP_reception_0847.jpg
+            <Loader size={15} />
           </div>
         </div>
       </div>
-      {isOverview && (
-        <div className="text-xs text-disabled ml-3">
-          {isOverview ? `${upload.progress}%` : upload.status}
-        </div>
-      )}
     </div>
   );
 }

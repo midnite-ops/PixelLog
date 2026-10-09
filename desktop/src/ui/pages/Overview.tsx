@@ -7,19 +7,19 @@ function Overview() {
     {
       title: "CP_reception_0847.psd",
       size: "1.2 MB",
-      progress: 50,
       status: "Progress",
+      message: 'Uploading Preview'
     },
     {
       title: "File 1",
       size: "500 MB",
-      progress: 50,
+message: 'Uploading Preview',
       status: "Progress",
     },
     {
       title: "CP_portraits_0214.psd",
       size: "1.2 MB",
-      progress: 50,
+      message: 'Uploading Preview',
       status: "Progress",
     },
   ];

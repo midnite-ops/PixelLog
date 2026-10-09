@@ -7,14 +7,6 @@ import Settings from "./pages/Settings";
 import Uploads from "./pages/Uploads";
 
 function App() {
-  //@ts-ignore
-  window.pixelLog.uploadStatus(data => console.log({data}, ))
-  //@ts-ignore
-  window.pixelLog.getQueuedFiles((newFiles) => console.log(newFiles))
-    console.log("App.tsx mounted");
-  //@ts-ignore
-  window.pixelLog.test()
-  
   const [activeLink, setActiveLink] = useState<string>("Overview");
   return (
     <section className="bg-primary h-screen overflow-hidden text-white flex">
