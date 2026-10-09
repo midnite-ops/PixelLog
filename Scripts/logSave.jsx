@@ -130,7 +130,7 @@ function attatchId() {
     return documentId;
   }
 
-  return documentId
+  return documentId;
 }
 
 function savePreview() {
@@ -240,7 +240,19 @@ try {
   }
   var logFile = new File(pixelLogFolder + "/pixelLog.json");
   var retryQueue = new File(pixelLogFolder + "/retryQueue.json");
+  var previousLogs = new File(pixelLogFolder + "/previousLogs.json");
   var logs = [];
+
+  function writeToFile(file) {
+    if (!file.exists) {
+      file.open("w");
+      file.write(toJSON([]));
+      file.close();
+      return
+    }
+  }
+  writeToFile(retryQueue);
+  writeToFile(previousLogs);
 
   // Read old logs (if file exists)
   if (logFile.exists) {

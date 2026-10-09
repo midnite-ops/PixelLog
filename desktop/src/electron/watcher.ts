@@ -48,30 +48,26 @@ const watcher = chokidar.watch([pixelLogPath, previewFolder], {
 // PREVIOUS LOGS
 // --------------------------------------------------
 
-// Read the current PixelLog when the watcher starts.
-//
-// This gives us a baseline that we can later compare
-// against when pixelLog.json changes.
-let previousLogs: LogType[] = [];
+function writeToPreviousLogs(logs: LogType[]) {
+  const previousLogsPath = path.join(pixelLogFolder, "previousLogs.json");
+
+  fs.writeFileSync(previousLogsPath, JSON.stringify(logs, null, 2));
+}
+
 
 // --------------------------------------------------
 // READ PIXELLOG
 // --------------------------------------------------
 
-function readLogs(): LogType[] {
+function readJson(filePath: string): LogType[] {
   // Read the latest version of pixelLog.json
-  const file = fs.readFileSync(pixelLogPath, "utf8");
+  const file = path.join(pixelLogFolder, filePath);
+  const fileContents = fs.readFileSync(file, "utf8");
 
   // Convert JSON text into a JavaScript object
-  return JSON.parse(file);
+  return JSON.parse(fileContents);
 }
 
-function readRetryQueue(): LogType[] {
-  const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
-  const file = fs.readFileSync(retryQueue, "utf8");
-
-  return JSON.parse(file);
-}
 // Read the current retryQueue file and overwrite it with the new updated data
 function deleteFromRetryQueue(doc: LogType) {
   const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
@@ -84,7 +80,7 @@ function deleteFromRetryQueue(doc: LogType) {
 function addToRetryQueue(doc: LogType) {
   const retryQueuePath = path.join(pixelLogFolder, "retryQueue.json");
 
-  const retryQueue = readRetryQueue();
+  const retryQueue = readJson("retryQueue.json");
 
   const index = retryQueue.findIndex(
     (log) => log.documentId === doc.documentId,
@@ -115,7 +111,7 @@ export function getQueuedFiles(mainWindow: BrowserWindow){
    mainWindow.webContents.send("queuedFiles", ['fish'])
 }
 export function getFileInfo() {
-  return readLogs()[0];
+  return readJson("pixelLog.json")[0];
 }
 
 // --------------------------------------------------
@@ -174,7 +170,7 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
 
 //PROCESS RETRY QUEUE
 async function processRetryQueue() {
-  const retryQueue = readRetryQueue();
+  const retryQueue = readJson("retryQueue.json");
 
   for (const log of retryQueue) {
     try {
@@ -212,7 +208,8 @@ async function processPixelLog() {
     console.log("start");
 
     try {
-      const logs = readLogs();
+      const logs = readJson("pixelLog.json");
+      const previousLogs = readJson("previousLogs.json");
 
       const changedDocuments = compareChanges(previousLogs, logs);
 
@@ -254,7 +251,7 @@ async function processPixelLog() {
         }
       }
 
-      previousLogs = logs;
+      writeToPreviousLogs(logs);
 
       console.log("PixelLog processed");
     } catch (error) {
