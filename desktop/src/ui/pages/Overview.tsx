@@ -1,21 +1,26 @@
 import { Clock4, Eye, Share, X } from "lucide-react";
+import UploadCard from "../components/UploadCard";
+import type { UploadItem } from "../../electron/types/upload";
 
 function Overview() {
-  const activeUploads = [
+  const activeUploads: UploadItem[] = [
     {
       title: "CP_reception_0847.psd",
       size: "1.2 MB",
       progress: 50,
+      status: "Progress",
     },
     {
       title: "File 1",
       size: "500 MB",
       progress: 50,
+      status: "Progress",
     },
     {
       title: "CP_portraits_0214.psd",
       size: "1.2 MB",
       progress: 50,
+      status: "Progress",
     },
   ];
   const recentActivity = [
@@ -73,7 +78,7 @@ function Overview() {
     },
   ];
   return (
-    <section className= 'page-spacing no-scrollbar'>
+    <section className="page-spacing no-scrollbar">
       <div className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div className="rounded-lg border bg-cardColor border-disabledBorder p-2">
@@ -99,29 +104,12 @@ function Overview() {
 
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
           {activeUploads.map((upload, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <div className="size-2 rounded-full bg-active"></div>
-              <div className="w-full">
-                <div className=" flex  justify-between">
-                  <p className="font-light font-mono text-xs">{upload.title}</p>
-                  <p className="text-xs text-disabled font-extralight">
-                    {upload.size}
-                  </p>
-                </div>
-
-                <div className="mt-2">
-                  <div className="bg-disabledBorder h-1 rounded-full">
-                    <div
-                      className="bg-active h-1 rounded-full"
-                      style={{ width: `${upload.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-xs text-disabled ml-3">
-                {upload.progress}%
-              </div>
-            </div>
+            <UploadCard
+              key={index}
+              upload={upload}
+              index={index}
+              isOverview={true}
+            />
           ))}
         </div>
 
@@ -132,18 +120,19 @@ function Overview() {
 
           <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder  flex flex-col gap-5">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex p-4 border-b border-b-disabledBorder items-center gap-3">
+              <div
+                key={index}
+                className="flex p-4 border-b border-b-disabledBorder items-center gap-3"
+              >
                 <div
                   className={`${activity.color} inline-block p-1 px-2 rounded-lg`}
                 >
                   <activity.icon className="w-4" />
                 </div>
                 <div>
-                  <p className="font-sans text-xs mb-1">
-                    {activity.title}
-                  </p>
+                  <p className="font-sans text-xs mb-1">{activity.title}</p>
                   <p className="text-xs text-disabled font-extralight">
-                    {activity.file} 
+                    {activity.file}
                   </p>
                 </div>
                 <p className="text-xs text-disabled font-extralight ml-auto">

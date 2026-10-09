@@ -1,6 +1,6 @@
 import type {  Dispatch, SetStateAction } from "react";
 import appLogo from "../assets/PixelLog.png";
-import { Activity, Folder, Loader2, Monitor, Settings, Share } from "lucide-react";
+import { Activity, Loader2, Monitor, Settings, Share } from "lucide-react";
 
 interface SidebarProps{
     currentLink: string
@@ -19,10 +19,6 @@ function Sidebar({currentLink, setCurrentLink}: SidebarProps) {
     {
       title: "Activity",
       icon: Activity,
-    },
-    {
-      title: "Folders",
-      icon: Folder,
     },
     {
       title: "Settings",

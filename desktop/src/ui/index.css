@@ -19,6 +19,9 @@
   .page-spacing{
     @apply overflow-y-scroll h-full p-6 pb-25 lg:pb-0;
   }
+  .subtitle-text{
+    @apply uppercase tracking-[0.2em] text-disabled font-bold font-sans text-[11px]
+  }
 }
 
 .no-scrollbar{
