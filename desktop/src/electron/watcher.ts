@@ -9,6 +9,7 @@ import { updateLogs } from "./services/updateLogs.js";
 import { compareChanges } from "./compareChanges.js";
 
 import { LogType } from "./types/logType.js";
+import { BrowserWindow } from "electron";
 
 // Used to delay processing of pixelLog.json.
 // This prevents multiple file events from triggering
@@ -65,7 +66,7 @@ function readLogs(): LogType[] {
   return JSON.parse(file);
 }
 
-function readRetryQueue(): LogType[]  {
+function readRetryQueue(): LogType[] {
   const retryQueue = path.join(pixelLogFolder, "retryQueue.json");
   const file = fs.readFileSync(retryQueue, "utf8");
 
@@ -99,6 +100,26 @@ function addToRetryQueue(doc: LogType) {
 }
 
 let newFiles: string[] = [];
+const syncUploadStatus: {failed: string[], message:string, file:string, queued: string, completed:string} = {
+  message: "",
+  file: "",
+  queued: "",
+  completed: "",
+  failed: [],
+};
+
+export function uploadStatus(mainWindow: BrowserWindow) {
+  setInterval(() => {
+    mainWindow.webContents.send("upload-status", syncUploadStatus);
+  }, 5000)
+  
+}
+export function getQueuedFiles(mainWindow: BrowserWindow){
+   mainWindow.webContents.send("queuedFiles", ['fish'])
+}
+export function getFileInfo() {
+  return readLogs()[0];
+}
 
 // --------------------------------------------------
 // ATTACH CLOUDINARY URLS TO EVENTS
@@ -107,10 +128,10 @@ let newFiles: string[] = [];
 async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
   const uploaded: LogType[] = [];
   const updatedFiles = newFiles.map((file) => {
-  const extension = path.extname(file);
+    const extension = path.extname(file);
 
-  return file.slice(0, -extension.length) + extension.toLowerCase();
-});
+    return file.slice(0, -extension.length) + extension.toLowerCase();
+  });
   for (const filePath of updatedFiles) {
     let failedLog: LogType | undefined;
 
@@ -123,10 +144,10 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
         if (!event) {
           continue;
         }
-        console.log('yes', event.previewPath)
+        console.log("yes", event.previewPath);
 
         failedLog = log;
-
+        syncUploadStatus.message = "Uploading preview";
         const previewUrl = await uploadPreview(filePath);
 
         if (!previewUrl) {
@@ -142,6 +163,7 @@ async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
         break;
       }
     } catch (error) {
+      syncUploadStatus.failed.push(filePath)
       console.error("Preview upload failed:", filePath);
 
       if (failedLog) {
@@ -169,7 +191,6 @@ async function processRetryQueue() {
         }
 
         event.previewUrl = preview;
-        
       }
       await uploadLogs(log);
 
@@ -202,20 +223,15 @@ async function processPixelLog() {
         console.log("No new changes");
         return;
       }
-      console.log('changedDocuments')
 
       const uploadedLogs = await uploadPreviewDoc(changedDocuments);
 
       newFiles = [];
 
-      console.log(uploadedLogs)
-
       if (previousLogs.length < logs.length) {
-        console.log("upload");
-
         for (const document of uploadedLogs) {
-          console.log(document)
           try {
+            syncUploadStatus.message = "Uploading Logs"
             await uploadLogs(document);
           } catch (error) {
             console.error(
@@ -228,8 +244,6 @@ async function processPixelLog() {
           }
         }
       } else {
-        console.log("change");
-
         try {
           await updateLogs(uploadedLogs[0]);
         } catch (error) {
