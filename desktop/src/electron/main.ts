@@ -1,15 +1,12 @@
-import { app, BrowserWindow } from "electron";
-import { fork } from "child_process";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isDev } from "./isDev.js";
 import { pathResolver } from "./pathResolver.js";
+import { getFileInfo, getQueuedFiles, uploadStatus } from "./watcher.js";
 
-type test = string;
 
 app.on("ready", () => {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -21,15 +18,16 @@ app.on("ready", () => {
     },
   });
 
-  const watcher = fork(path.join(__dirname, "watcher.js"));
-
-  watcher.on("message", (message) => {
-    mainWindow.webContents.send("upload-status", message);
-  });
-
   if (isDev()) {
     mainWindow.loadURL("http://localhost:8000");
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "/dist-react/index.html"));
   }
+
+  uploadStatus(mainWindow);
+  getQueuedFiles(mainWindow)
+
+  ipcMain.handle("getFileInfo", () => {
+    return getFileInfo();
+  });
 });
