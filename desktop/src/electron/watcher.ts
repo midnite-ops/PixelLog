@@ -1,4 +1,4 @@
-import chokidar from "chokidar";
+import chokidar, { type FSWatcher} from "chokidar";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -36,13 +36,32 @@ const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
 // Watch both:
 // 1. pixelLog.json
 // 2. everything inside the previews folder
-const watcher = chokidar.watch([pixelLogPath, previewFolder], {
-  persistent: true,
+let watcher: FSWatcher | null = null;
 
-  // Detect files that already exist when
-  // the watcher starts.
-  ignoreInitial: false,
-});
+export function startWatcher() {
+  if (watcher) return;
+
+  watcher = chokidar.watch([pixelLogPath, previewFolder], {
+    persistent: true,
+    ignoreInitial: false,
+  });
+
+  watcher.on("add", async (filePath:string) => {
+    console.log("File added:", filePath);
+
+    if (filePath.startsWith(previewFolder)) {
+      newFiles.push(filePath);
+      processPixelLog();
+    }
+  });
+
+  watcher.on("change", async (filePath:string) => {
+    if (filePath.startsWith(previewFolder)) {
+      newFiles.push(filePath);
+      processPixelLog();
+    }
+  });
+}
 
 // --------------------------------------------------
 // PREVIOUS LOGS
@@ -104,11 +123,13 @@ const syncUploadStatus: {failed: string[], message:string, file:string, queued: 
   failed: [],
 };
 
-export function uploadStatus(mainWindow: BrowserWindow) {
-   mainWindow.webContents.send("upload-status", syncUploadStatus);
+export function uploadStatus() {
+  // mainWindow.webContents.send("upload-status", syncUploadStatus);
+  return syncUploadStatus || ['faddcadca'];
 }
 export function getQueuedFiles(mainWindow: BrowserWindow){
-   mainWindow.webContents.send("queuedFiles", ['fish'])
+  console.log(newFiles, 'fiadacadcd')
+   mainWindow.webContents.send("queuedFiles", newFiles)
 }
 export function getFileInfo() {
   return readJson("pixelLog.json")[0];
@@ -259,37 +280,3 @@ async function processPixelLog() {
     }
   }, 2000);
 }
-
-// --------------------------------------------------
-// FILE CREATED
-// --------------------------------------------------
-
-watcher.on("add", async (filePath) => {
-  console.log("File added:", filePath);
-
-  // ----------------------------------------------
-  // PREVIEW CREATED
-  // ----------------------------------------------
-
-  if (filePath.startsWith(previewFolder)) {
-    console.log("preview added");
-    newFiles.push(filePath);
-    processPixelLog();
-  }
-});
-
-// --------------------------------------------------
-// FILE CHANGED
-// --------------------------------------------------
-
-watcher.on("change", async (filePath) => {
-  if (filePath.startsWith(previewFolder)) {
-    /**
-     * A preview already exists but its contents
-     * have changed.
-     *
-     * Upload the new version to Cloudinary.
-     */
-    processPixelLog();
-  }
-});

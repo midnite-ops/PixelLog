@@ -1,9 +1,8 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
-import { fileURLToPath } from "url";
 import { isDev } from "./isDev.js";
 import { pathResolver } from "./pathResolver.js";
-import { getFileInfo, getQueuedFiles, uploadStatus } from "./watcher.js";
+import { getFileInfo, getQueuedFiles, uploadStatus, startWatcher } from "./watcher.js";
 
 
 app.on("ready", () => {
@@ -18,14 +17,22 @@ app.on("ready", () => {
     },
   });
 
+   ipcMain.once("frontend-ready", () => {
+    console.log("Frontend is ready, starting watcher and sending upload status...");
+    startWatcher();
+    getQueuedFiles(mainWindow);
+  });
+
   if (isDev()) {
     mainWindow.loadURL("http://localhost:8000");
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "/dist-react/index.html"));
   }
 
-  uploadStatus(mainWindow);
-  getQueuedFiles(mainWindow)
+  ipcMain.handle("upload-status", () => {
+    return uploadStatus();
+  });
+ 
 
   ipcMain.handle("getFileInfo", () => {
     return getFileInfo();
