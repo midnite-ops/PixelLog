@@ -1,28 +1,23 @@
 import { Clock4, Eye, Share, X } from "lucide-react";
 import UploadCard from "../components/UploadCard";
-import type { UploadItem } from "../../electron/types/upload";
+import type { UploadItem } from "../../../types";
+import { useState } from "react";
+import type { LogType } from "../../../types";
+import { useEffect } from "react";
 
-function Overview() {
-  const activeUploads: UploadItem[] = [
-    {
-      title: "CP_reception_0847.psd",
-      size: "1.2 MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-    {
-      title: "File 1",
-      size: "500 MB",
-message: 'Uploading Preview',
-      status: "Progress",
-    },
-    {
-      title: "CP_portraits_0214.psd",
-      size: "1.2 MB",
-      message: 'Uploading Preview',
-      status: "Progress",
-    },
-  ];
+interface OverviewProps {
+  failedUploads: LogType[];
+  uploadStatus: UploadItem; // Replace 'any' with the actual type if available
+}
+
+function Overview({ failedUploads, uploadStatus }: OverviewProps) {
+  const [failedUploadsState, setFailedUploadsState] = useState(failedUploads);
+  const [activeUploads, setActiveUploads] = useState(uploadStatus);
+  useEffect(() => {
+    setFailedUploadsState(failedUploads);
+    setActiveUploads(uploadStatus);
+  }, [failedUploads, uploadStatus]);
+
   const recentActivity = [
     {
       title: "Photoshop save detected",
@@ -73,7 +68,7 @@ message: 'Uploading Preview',
     },
     {
       title: "Errors",
-      quantity: 1,
+      quantity: failedUploadsState.length,
       icon: X,
     },
   ];
@@ -89,7 +84,7 @@ message: 'Uploading Preview',
                 className={`${stat.title === "Errors" ? "text-red" : ""}text-active w-4`}
               />
             </div>
-            <p>{stat.quantity}</p>
+            <p className="ml-1">{stat.quantity}</p>
             <p className="text-sm text-disabled font-extralight">
               {stat.title}
             </p>
@@ -103,14 +98,40 @@ message: 'Uploading Preview',
         </h3>
 
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-          {activeUploads.map((upload, index) => (
-            <UploadCard
-              key={index}
-              upload={upload}
-              index={index}
-              isOverview={true}
-            />
-          ))}
+          {activeUploads.queued.length !== 0  ? activeUploads.queued.map((upload, index) => {
+            if (upload.documentId === activeUploads.document?.documentId) {
+              return (
+                <UploadCard
+                  key={index}
+                  upload={{
+                    document: activeUploads.document,
+                    size: activeUploads.size,
+                    message: activeUploads.message,
+                    status: "Progress",
+                  }}
+                  index={index}
+                  isOverview={true}
+                />
+              );
+            } else {
+              return (
+                <div className="">
+                  <UploadCard
+                  key={index}
+                  upload={{
+                    document: upload,
+                    size: activeUploads.size,
+                    message: "Queued",
+                    status: "Queued",
+                  }}
+                  index={index}
+                  isOverview={true}
+                />
+                </div>
+                
+              );
+            }
+          }) : <div className="py-10 justify-center ">No Actvive uploads</div> }
         </div>
 
         <div className="mt-5">

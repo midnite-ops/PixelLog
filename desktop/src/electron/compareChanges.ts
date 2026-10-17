@@ -1,4 +1,4 @@
-import { LogType } from "./types/logType.js";
+import { LogType } from '../../types.js'
 
 export const compareChanges = (
   previousLogs: LogType[],

@@ -1,12 +1,13 @@
 import { Loader } from "lucide-react";
-import type { Upload } from "../../electron/types/upload";
+import type { Upload } from "../../../types.d.ts";
+import type { LogType } from "../../../types.d.ts";
 
 interface UploadCardProps {
   upload: {
-    title: string;
+    document: LogType | null;
     size: string;
     message: string;
-    status?: Upload;
+    status: Upload;
   };
   index: number;
   isOverview: boolean;
@@ -23,7 +24,9 @@ function UploadCard({ upload, index, isOverview }: UploadCardProps) {
       ></div>
       <div className="w-full">
         <div className="flex justify-between ">
-          <p className="font-light font-mono text-xs">{upload.title}</p>
+          <p className="font-light font-mono text-xs">
+            {upload.document?.fileName}
+          </p>
 
           <div className="text-xs text-disabled ml-3 flex flex-1 justify-end items-center ">
             <p className="text-[10px] text-disabled font-extralight">
@@ -34,9 +37,14 @@ function UploadCard({ upload, index, isOverview }: UploadCardProps) {
 
         <div className="mt-2">
           <div className=" flex items-center gap-2  text-disabled text-sm">
-            {upload.message} from
-            /Users/Documents/Previews/CP_reception_0847.jpg
-            <Loader size={15} />
+            {upload.message} 
+            { 'from' + upload.document?.filePath}
+            {upload.status === "Progress" && (
+              <Loader
+                size={20}
+                className="animate-spin transition-all duration-200"
+              />
+            )}
           </div>
         </div>
       </div>

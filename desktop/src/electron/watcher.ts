@@ -1,4 +1,4 @@
-import chokidar, { type FSWatcher} from "chokidar";
+import chokidar, { type FSWatcher } from "chokidar";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -8,7 +8,7 @@ import { uploadPreview } from "./services/uploadPreview.js";
 import { updateLogs } from "./services/updateLogs.js";
 import { compareChanges } from "./compareChanges.js";
 
-import { LogType } from "./types/logType.js";
+import { LogType, UploadItem } from "../../types.js";
 import { BrowserWindow } from "electron";
 
 // Used to delay processing of pixelLog.json.
@@ -37,28 +37,51 @@ const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
 // 1. pixelLog.json
 // 2. everything inside the previews folder
 let watcher: FSWatcher | null = null;
+let mainWindow: BrowserWindow | null = null;
 
-export function startWatcher() {
+export function uploadStatus(mainWindow: BrowserWindow) {
+  mainWindow.webContents.send("upload-status", syncUploadStatus);
+}
+export function getQueuedFiles(mainWindow: BrowserWindow) {
+  console.log(newFiles, "fiadacadcd");
+  mainWindow.webContents.send("queuedFiles", newFiles);
+}
+export function getFileInfo() {
+  return readJson("pixelLog.json")[0];
+}
+
+export function getFailedUploads() {
+  return readJson("retryQueue.json");
+}
+
+function sendUploadStatus() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("upload-status", syncUploadStatus);
+  }
+}
+
+export function startWatcher(window: BrowserWindow) {
   if (watcher) return;
+  mainWindow = window;
 
   watcher = chokidar.watch([pixelLogPath, previewFolder], {
     persistent: true,
     ignoreInitial: false,
   });
 
-  watcher.on("add", async (filePath:string) => {
+  watcher.on("add", async (filePath: string) => {
     console.log("File added:", filePath);
 
     if (filePath.startsWith(previewFolder)) {
       newFiles.push(filePath);
-      processPixelLog();
+      uploadPixelLog();
     }
   });
 
-  watcher.on("change", async (filePath:string) => {
+  watcher.on("change", async (filePath: string) => {
     if (filePath.startsWith(previewFolder)) {
       newFiles.push(filePath);
-      processPixelLog();
+      uploadPixelLog();
     }
   });
 }
@@ -72,7 +95,6 @@ function writeToPreviousLogs(logs: LogType[]) {
 
   fs.writeFileSync(previousLogsPath, JSON.stringify(logs, null, 2));
 }
-
 
 // --------------------------------------------------
 // READ PIXELLOG
@@ -115,79 +137,13 @@ function addToRetryQueue(doc: LogType) {
 }
 
 let newFiles: string[] = [];
-const syncUploadStatus: {failed: string[], message:string, file:string, queued: string, completed:string} = {
+const syncUploadStatus: UploadItem = {
+  document: null,
   message: "",
-  file: "",
-  queued: "",
-  completed: "",
-  failed: [],
+  queued: [],
+  status: '',
+  size: "",
 };
-
-export function uploadStatus() {
-  // mainWindow.webContents.send("upload-status", syncUploadStatus);
-  return syncUploadStatus || ['faddcadca'];
-}
-export function getQueuedFiles(mainWindow: BrowserWindow){
-  console.log(newFiles, 'fiadacadcd')
-   mainWindow.webContents.send("queuedFiles", newFiles)
-}
-export function getFileInfo() {
-  return readJson("pixelLog.json")[0];
-}
-
-// --------------------------------------------------
-// ATTACH CLOUDINARY URLS TO EVENTS
-// --------------------------------------------------
-
-async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
-  const uploaded: LogType[] = [];
-  const updatedFiles = newFiles.map((file) => {
-    const extension = path.extname(file);
-
-    return file.slice(0, -extension.length) + extension.toLowerCase();
-  });
-  for (const filePath of updatedFiles) {
-    let failedLog: LogType | undefined;
-
-    try {
-      for (const log of logs) {
-        const event = log.event.find(
-          (event) => event.previewPath + ".jpg" === filePath,
-        );
-
-        if (!event) {
-          continue;
-        }
-        console.log("yes", event.previewPath);
-
-        failedLog = log;
-        syncUploadStatus.message = "Uploading preview";
-        const previewUrl = await uploadPreview(filePath);
-
-        if (!previewUrl) {
-          throw new Error("Preview upload returned no URL");
-        }
-
-        event.previewUrl = previewUrl;
-
-        uploaded.push(log);
-
-        console.log("Attached url:", filePath);
-
-        break;
-      }
-    } catch (error) {
-      syncUploadStatus.failed.push(filePath)
-      console.error("Preview upload failed:", filePath);
-
-      if (failedLog) {
-        addToRetryQueue(failedLog);
-      }
-    }
-  }
-
-  return uploaded;
-}
 
 //PROCESS RETRY QUEUE
 async function processRetryQueue() {
@@ -220,6 +176,60 @@ async function processRetryQueue() {
 // PROCESS PIXELLOG
 // --------------------------------------------------
 
+async function uploadPixelLog() {
+  console.log("start");
+  if (processTimer) {
+    clearTimeout(processTimer);
+  }
+  processTimer = setTimeout(async () => {
+    const logs = readJson("pixelLog.json");
+    const previousLogs = readJson("previousLogs.json");
+    const changedDocuments = compareChanges(previousLogs, logs);
+    console.log("Changed Documents:", changedDocuments);
+
+    if (!changedDocuments || changedDocuments.length === 0) {
+      console.log("No new changes");
+      return;
+    }
+    syncUploadStatus.queued = changedDocuments 
+
+    for (const document of changedDocuments) {
+      try {
+        syncUploadStatus.message = "Uploading preview";
+        syncUploadStatus.status = 'Progress'
+        syncUploadStatus.document = document;
+        sendUploadStatus();
+        const previewUrl = await uploadPreview(
+          document.event[0].previewPath + ".jpg",
+        );
+
+        if (!previewUrl) {
+          throw new Error("Preview upload returned no URL");
+        }
+        document.event[0].previewUrl = previewUrl;
+
+        if (previousLogs.length < logs.length) {
+          syncUploadStatus.message = "Uploading Logs";
+          syncUploadStatus.document = document;
+          sendUploadStatus();
+          await uploadLogs(document);
+          syncUploadStatus.status = 'Completed'
+          sendUploadStatus()
+        } else {
+          updateLogs(document);
+        }
+      } catch (error) {
+        syncUploadStatus.status = "Failed"
+        console.error("Upload failed:", document.documentId, error);
+        addToRetryQueue(document);
+      }
+    }
+    writeToPreviousLogs(logs);
+
+    console.log("PixelLog processed");
+  }, 2000);
+}
+
 async function processPixelLog() {
   if (processTimer) {
     clearTimeout(processTimer);
@@ -246,8 +256,13 @@ async function processPixelLog() {
       if (previousLogs.length < logs.length) {
         for (const document of uploadedLogs) {
           try {
-            syncUploadStatus.message = "Uploading Logs"
+            syncUploadStatus.message = "Uploading Logs";
+            sendUploadStatus();
+
             await uploadLogs(document);
+
+            syncUploadStatus.message = "Logs uploaded";
+            sendUploadStatus();
           } catch (error) {
             console.error(
               "Database upload failed:",
@@ -279,4 +294,61 @@ async function processPixelLog() {
       console.error("PixelLog processing failed:", error);
     }
   }, 2000);
+}
+
+async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
+  const uploaded: LogType[] = [];
+  const updatedFiles = newFiles.map((file) => {
+    const extension = path.extname(file);
+
+    return file.slice(0, -extension.length) + extension.toLowerCase();
+  });
+  for (const filePath of updatedFiles) {
+    let failedLog: LogType | undefined;
+
+    try {
+      for (const log of logs) {
+        const event = log.event.find(
+          (event) => event.previewPath + ".jpg" === filePath,
+        );
+
+        if (!event) {
+          continue;
+        }
+        console.log("yes", event.previewPath);
+
+        failedLog = log;
+
+        syncUploadStatus.message = "Uploading preview";
+        sendUploadStatus();
+
+        const previewUrl = await uploadPreview(filePath);
+
+        if (!previewUrl) {
+          throw new Error("Preview upload returned no URL");
+        }
+
+        syncUploadStatus.message = "Preview uploaded";
+        sendUploadStatus();
+
+        event.previewUrl = previewUrl;
+
+        uploaded.push(log);
+
+        console.log("Attached url:", filePath);
+
+        break;
+      }
+    } catch (error) {
+      syncUploadStatus.message = "Preview upload failed";
+      sendUploadStatus();
+      console.error("Preview upload failed:", filePath);
+
+      if (failedLog) {
+        addToRetryQueue(failedLog);
+      }
+    }
+  }
+
+  return uploaded;
 }
