@@ -6,6 +6,7 @@ import Activity from "./pages/Activity";
 import Settings from "./pages/Settings";
 import Uploads from "./pages/Uploads";
 import type { LogType } from "../../types";
+import { getActivity, saveActivity } from "./utils/loadActivity";
 
 function App() {
   const [activeLink, setActiveLink] = useState<string>("Overview");
@@ -16,7 +17,7 @@ function App() {
     document: {} as LogType,
     queued: [] as LogType[],
     size: "",
-    status: ''
+    status: "",
   });
   useEffect(() => {
     //@ts-ignore
@@ -25,12 +26,28 @@ function App() {
     window.pixelLog.getFailedUploads().then((uploads: any) => {
       setFailedUploads(uploads);
     });
+
+    //@ts-ignore
+    window.pixelLog.getActivity((activity: any) => {
+      console.log(activity)
+      if(activity.event === '')return
+      saveActivity(activity.event, activity.file, activity.id)
+    })
     //@ts-ignore
     window.pixelLog.uploadStatus((status: any) => {
-      console.log("Upload Status:", status);
       setUploadStatus(status);
+
+      const document = status?.document;
+      const event = document?.event?.[0];
+
+      if (document && event?.type && event?.id) {
+        saveActivity(event.type, document.fileName, event.id);
+      }
     });
-  },[])
+  }, []);
+
+ 
+
   //@ts-ignore
   return (
     <section className="bg-primary h-screen overflow-hidden text-white flex">
@@ -38,7 +55,9 @@ function App() {
       <div className="flex-col items-start h-full flex-1 ">
         <Header activePage={activeLink} />
         <main className="overflow-hidden h-full">
-          {activeLink === "Overview" && <Overview failedUploads={failedUploads} uploadStatus={uploadStatus} />}
+          {activeLink === "Overview" && (
+            <Overview failedUploads={failedUploads} uploadFile={uploadStatus} />
+          )}
           {activeLink === "Uploads" && <Uploads />}
           {activeLink === "Activity" && <Activity />}
           {activeLink === "Settings" && <Settings />}

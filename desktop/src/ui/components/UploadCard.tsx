@@ -17,7 +17,7 @@ function UploadCard({ upload, index, isOverview }: UploadCardProps) {
   return (
     <div
       key={index}
-      className={`flex items-center gap-3 ${isOverview ? "border-b border-disabledBorder last:border-b-0 pb-5 " : ""}`}
+      className={`flex items-center gap-3 ${isOverview ? "border-b border-disabledBorder pb-5 " : ""}`}
     >
       <div
         className={`size-2 rounded-full ${upload.status === "Progress" ? "bg-active" : upload.status === "Complete" ? "bg-connected" : upload.status === "Queued" ? "bg-disabled" : "bg-red-500/80"}`}
@@ -38,7 +38,7 @@ function UploadCard({ upload, index, isOverview }: UploadCardProps) {
         <div className="mt-2">
           <div className=" flex items-center gap-2  text-disabled text-sm">
             {upload.message} 
-            { 'from' + upload.document?.filePath}
+            { ' from ' + upload.document?.filePath}
             {upload.status === "Progress" && (
               <Loader
                 size={20}

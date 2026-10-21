@@ -1,5 +1,5 @@
 import axios from "axios";
-import { LogType } from "../types/logType.js";
+import { LogType } from "../../../types.js";
 import { API_URL } from "./api.js";
 
 export const uploadLogs = async (logs: LogType) => {

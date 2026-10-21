@@ -42,9 +42,8 @@ let mainWindow: BrowserWindow | null = null;
 export function uploadStatus(mainWindow: BrowserWindow) {
   mainWindow.webContents.send("upload-status", syncUploadStatus);
 }
-export function getQueuedFiles(mainWindow: BrowserWindow) {
-  console.log(newFiles, "fiadacadcd");
-  mainWindow.webContents.send("queuedFiles", newFiles);
+export function getActivity(mainWindow: BrowserWindow) {
+  mainWindow.webContents.send("get-activity", activity);
 }
 export function getFileInfo() {
   return readJson("pixelLog.json")[0];
@@ -60,9 +59,25 @@ function sendUploadStatus() {
   }
 }
 
+function sendActivity(){
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("get-activity", activity);
+  }
+}
+
+function updateQueue(id:string){
+  const updatedQueue = syncUploadStatus.queued.filter((docId) => docId.documentId !== id)
+  syncUploadStatus.queued = updatedQueue
+  sendUploadStatus()
+}
+
 export function startWatcher(window: BrowserWindow) {
   if (watcher) return;
   mainWindow = window;
+  activity.event = 'PixelLog Started'
+  activity.id = crypto.randomUUID(),
+  activity.file = 'v1.0.0 · Watching files'
+  sendActivity()
 
   watcher = chokidar.watch([pixelLogPath, previewFolder], {
     persistent: true,
@@ -141,9 +156,15 @@ const syncUploadStatus: UploadItem = {
   document: null,
   message: "",
   queued: [],
-  status: '',
+  status: "",
   size: "",
 };
+
+const activity = {
+  id: crypto.randomUUID(),
+  event: '',
+  file: '',
+}
 
 //PROCESS RETRY QUEUE
 async function processRetryQueue() {
@@ -191,12 +212,12 @@ async function uploadPixelLog() {
       console.log("No new changes");
       return;
     }
-    syncUploadStatus.queued = changedDocuments 
+    syncUploadStatus.queued = changedDocuments;
 
     for (const document of changedDocuments) {
       try {
         syncUploadStatus.message = "Uploading preview";
-        syncUploadStatus.status = 'Progress'
+        syncUploadStatus.status = "Progress";
         syncUploadStatus.document = document;
         sendUploadStatus();
         const previewUrl = await uploadPreview(
@@ -213,13 +234,22 @@ async function uploadPixelLog() {
           syncUploadStatus.document = document;
           sendUploadStatus();
           await uploadLogs(document);
-          syncUploadStatus.status = 'Completed'
-          sendUploadStatus()
+          syncUploadStatus.status = "Completed";
+          updateQueue(document.documentId)
+          activity.event = 'Upload Completed'
+          activity.file = document.fileName
+          activity.id = crypto.randomUUID()
+          sendActivity()
         } else {
           updateLogs(document);
         }
       } catch (error) {
-        syncUploadStatus.status = "Failed"
+        syncUploadStatus.status = "Failed";
+        updateQueue(document.documentId)
+         activity.event = 'Upload Failed'
+          activity.file = document.fileName
+          activity.id = crypto.randomUUID()
+          sendActivity()
         console.error("Upload failed:", document.documentId, error);
         addToRetryQueue(document);
       }

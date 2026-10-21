@@ -13,7 +13,7 @@ export interface LogType{
     filePath: string | null
     event: {
         id:string
-        type: string,
+        type: ActivityType,
         date:string
         history: {}
         fileType: string
@@ -31,3 +31,18 @@ export interface UploadItem {
   message: string
   queued: LogType[]
 }
+
+export type ActivityType =
+  | "Save"
+  | "Export"
+  | "Print"
+  | "Upload Complete"
+  | "Upload Failed"
+  | "PixelLog Started";
+
+export type Activity = {
+  id: string;
+  event: ActivityType;
+  file?: string;
+  time: string;
+};

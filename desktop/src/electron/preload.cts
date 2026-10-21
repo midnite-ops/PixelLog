@@ -13,9 +13,9 @@ electron.contextBridge.exposeInMainWorld('pixelLog', {
     },
     
 
-    getQueuedFiles: (callback: (data:any) => void) => {
-        electron.ipcRenderer.on("queuedFiles", (_:any, files:any) => {
-            callback(files)
+    getActivity: (callback: (data:any) => void) => {
+        electron.ipcRenderer.on("get-activity", (_:any, activity:any) => {
+            callback(activity)
         })
     },
 
