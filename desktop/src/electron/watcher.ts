@@ -39,6 +39,36 @@ const pixelLogPath = path.join(pixelLogFolder, "pixelLog.json");
 let watcher: FSWatcher | null = null;
 let mainWindow: BrowserWindow | null = null;
 
+export function startWatcher(window: BrowserWindow) {
+  if (watcher) return;
+  mainWindow = window;
+  activity.event = 'PixelLog Started'
+  activity.id = crypto.randomUUID(),
+  activity.file = 'v1.0.0 · Watching files'
+  sendActivity()
+
+  watcher = chokidar.watch([pixelLogPath, previewFolder], {
+    persistent: true,
+    ignoreInitial: false,
+  });
+
+  watcher.on("add", async (filePath: string) => {
+    console.log("File added:", filePath);
+
+    if (filePath.startsWith(previewFolder)) {
+      newFiles.push(filePath);
+      uploadPixelLog();
+    }
+  });
+
+  watcher.on("change", async (filePath: string) => {
+    if (filePath.startsWith(previewFolder)) {
+      newFiles.push(filePath);
+      uploadPixelLog();
+    }
+  });
+}
+
 export function uploadStatus(mainWindow: BrowserWindow) {
   mainWindow.webContents.send("upload-status", syncUploadStatus);
 }
@@ -69,36 +99,6 @@ function updateQueue(id:string){
   const updatedQueue = syncUploadStatus.queued.filter((docId) => docId.documentId !== id)
   syncUploadStatus.queued = updatedQueue
   sendUploadStatus()
-}
-
-export function startWatcher(window: BrowserWindow) {
-  if (watcher) return;
-  mainWindow = window;
-  activity.event = 'PixelLog Started'
-  activity.id = crypto.randomUUID(),
-  activity.file = 'v1.0.0 · Watching files'
-  sendActivity()
-
-  watcher = chokidar.watch([pixelLogPath, previewFolder], {
-    persistent: true,
-    ignoreInitial: false,
-  });
-
-  watcher.on("add", async (filePath: string) => {
-    console.log("File added:", filePath);
-
-    if (filePath.startsWith(previewFolder)) {
-      newFiles.push(filePath);
-      uploadPixelLog();
-    }
-  });
-
-  watcher.on("change", async (filePath: string) => {
-    if (filePath.startsWith(previewFolder)) {
-      newFiles.push(filePath);
-      uploadPixelLog();
-    }
-  });
 }
 
 // --------------------------------------------------
@@ -164,6 +164,7 @@ const activity = {
   id: crypto.randomUUID(),
   event: '',
   file: '',
+  time: ''
 }
 
 //PROCESS RETRY QUEUE
@@ -258,127 +259,4 @@ async function uploadPixelLog() {
 
     console.log("PixelLog processed");
   }, 2000);
-}
-
-async function processPixelLog() {
-  if (processTimer) {
-    clearTimeout(processTimer);
-  }
-
-  processTimer = setTimeout(async () => {
-    console.log("start");
-
-    try {
-      const logs = readJson("pixelLog.json");
-      const previousLogs = readJson("previousLogs.json");
-
-      const changedDocuments = compareChanges(previousLogs, logs);
-
-      if (!changedDocuments || changedDocuments.length === 0) {
-        console.log("No new changes");
-        return;
-      }
-
-      const uploadedLogs = await uploadPreviewDoc(changedDocuments);
-
-      newFiles = [];
-
-      if (previousLogs.length < logs.length) {
-        for (const document of uploadedLogs) {
-          try {
-            syncUploadStatus.message = "Uploading Logs";
-            sendUploadStatus();
-
-            await uploadLogs(document);
-
-            syncUploadStatus.message = "Logs uploaded";
-            sendUploadStatus();
-          } catch (error) {
-            console.error(
-              "Database upload failed:",
-              document.documentId,
-              error,
-            );
-
-            addToRetryQueue(document);
-          }
-        }
-      } else {
-        try {
-          await updateLogs(uploadedLogs[0]);
-        } catch (error) {
-          console.error(
-            "Database update failed:",
-            uploadedLogs[0].documentId,
-            error,
-          );
-
-          addToRetryQueue(uploadedLogs[0]);
-        }
-      }
-
-      writeToPreviousLogs(logs);
-
-      console.log("PixelLog processed");
-    } catch (error) {
-      console.error("PixelLog processing failed:", error);
-    }
-  }, 2000);
-}
-
-async function uploadPreviewDoc(logs: LogType[]): Promise<LogType[]> {
-  const uploaded: LogType[] = [];
-  const updatedFiles = newFiles.map((file) => {
-    const extension = path.extname(file);
-
-    return file.slice(0, -extension.length) + extension.toLowerCase();
-  });
-  for (const filePath of updatedFiles) {
-    let failedLog: LogType | undefined;
-
-    try {
-      for (const log of logs) {
-        const event = log.event.find(
-          (event) => event.previewPath + ".jpg" === filePath,
-        );
-
-        if (!event) {
-          continue;
-        }
-        console.log("yes", event.previewPath);
-
-        failedLog = log;
-
-        syncUploadStatus.message = "Uploading preview";
-        sendUploadStatus();
-
-        const previewUrl = await uploadPreview(filePath);
-
-        if (!previewUrl) {
-          throw new Error("Preview upload returned no URL");
-        }
-
-        syncUploadStatus.message = "Preview uploaded";
-        sendUploadStatus();
-
-        event.previewUrl = previewUrl;
-
-        uploaded.push(log);
-
-        console.log("Attached url:", filePath);
-
-        break;
-      }
-    } catch (error) {
-      syncUploadStatus.message = "Preview upload failed";
-      sendUploadStatus();
-      console.error("Preview upload failed:", filePath);
-
-      if (failedLog) {
-        addToRetryQueue(failedLog);
-      }
-    }
-  }
-
-  return uploaded;
 }

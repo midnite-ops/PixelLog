@@ -1,11 +1,3 @@
-type uploadStatus = {
-    uploading: string;
-    file: string;
-    queued: string;
-    completed: string;
-    failed: string;
-}
-
 export interface LogType{
     documentId: string
     id: string

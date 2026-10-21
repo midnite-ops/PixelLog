@@ -1,4 +1,4 @@
-import { Clock4, Eye, Share, X } from "lucide-react";
+import { Clock4, Share, X } from "lucide-react";
 import UploadCard from "../components/UploadCard";
 import type { UploadItem } from "../../../types";
 import { useState } from "react";

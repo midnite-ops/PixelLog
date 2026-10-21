@@ -6,7 +6,7 @@ import Activity from "./pages/Activity";
 import Settings from "./pages/Settings";
 import Uploads from "./pages/Uploads";
 import type { LogType } from "../../types";
-import { getActivity, saveActivity } from "./utils/loadActivity";
+import { saveActivity } from "./utils/loadActivity";
 
 function App() {
   const [activeLink, setActiveLink] = useState<string>("Overview");
