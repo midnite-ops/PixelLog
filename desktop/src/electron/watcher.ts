@@ -237,7 +237,7 @@ async function uploadPixelLog() {
           await uploadLogs(document);
           syncUploadStatus.status = "Completed";
           updateQueue(document.documentId)
-          activity.event = 'Upload Completed'
+          activity.event = 'Upload Complete'
           activity.file = document.fileName
           activity.id = crypto.randomUUID()
           sendActivity()

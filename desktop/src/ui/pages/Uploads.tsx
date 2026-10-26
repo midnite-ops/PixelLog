@@ -1,103 +1,50 @@
 import UploadCard from "../components/UploadCard";
-import type { UploadItem } from "../../electron/types/upload";
-function Uploads() {
-  const current: UploadItem = {
-    title: "test.png",
-    size: "2.5MB",
-    status: "Progress",
-    message: 'Uploading Preview'
-  };
+import { useEffect, useState } from "react";
+import type { UploadItem, LogType } from "../../../types";
+import { getCompletedUploads } from "../utils/completedUploads";
 
-  const failedUploads: UploadItem = {
-    title: "test-100.png",
-    size: "2.5MB",
-    status: "Progress",
-    message: 'Uploading Preview'
+interface UploadProps {
+  failedUploads: LogType[]
+}
+function Uploads({ failedUploads }: UploadProps) {
+  const [failed, setFailed] = useState<UploadItem[]>([])
+  const completedUploads = getCompletedUploads()
+  useEffect(() => {
+    const updateUploads = failedUploads.map((upload) => {
+      return({
+        document: upload || null,
+        size: '',
+        status: 'Failed',
+        message: `Failed to upload ${upload.fileName}`
+      })
+    })
+    setFailed(updateUploads)
     
-  };
-  
-  const queuedUploads: UploadItem[] = [
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-  ];
-
-  const completedUploads: UploadItem[] = [
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-    {
-      title: "test.png",
-      size: "2.5MB",
-      status: "Progress",
-      message: 'Uploading Preview'
-    },
-  ];
+  },[failedUploads]) 
   return (
     <section className="page-spacing no-scrollbar">
-      <div>
-        <h3 className="subtitle-text">in progress</h3>
-        <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-          <UploadCard upload={current} index={0} isOverview={false} />
-        </div>
-      </div>
-
-      <div className="mt-10">
-        <h3 className="subtitle-text">queued</h3>
-        <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-          {queuedUploads.map((upload, index) => (
-            <UploadCard
-              key={index}
-              upload={upload}
-              index={index}
-              isOverview={false}
-            />
-          ))}
-        </div>
-      </div>
 
       <div className="mt-10">
         <h3 className="subtitle-text">completed</h3>
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-          {completedUploads.map((upload, index) => (
+          {completedUploads.length === 0 ? <div className="flex justify-center">Nothing to see here</div> : completedUploads.map((upload, index) => (
             <UploadCard
               key={index}
               upload={upload}
               index={index}
               isOverview={false}
             />
-          ))}
+          ))} 
         </div>
       </div>
 
       <div className="mt-10">
         <h3 className="subtitle-text">failed</h3>
         <div className="mt-3 bg-cardColor rounded-lg border border-disabledBorder p-4 flex flex-col gap-5">
-          <UploadCard upload={failedUploads} index={0} isOverview={false} />
+          {failed.map((upload,  index) => (
+               <UploadCard upload={upload} index={index} isOverview={false} />
+          ))}
+       
         </div>
       </div>
     </section>

@@ -370,7 +370,7 @@ try {
     logs.push({
       documentId: attatchId(),
       fileName: docInfo.name,
-      filePath: docInfo.path,
+      filePath: docInfo.path || null,
       event: [newEvent],
     });
     saveToDisk(logs);

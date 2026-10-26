@@ -21,7 +21,7 @@ export interface UploadItem {
   size: string;
   status: Upload | string;
   message: string
-  queued: LogType[]
+  queued?: LogType[]
 }
 
 export type ActivityType =

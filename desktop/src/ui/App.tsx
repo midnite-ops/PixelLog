@@ -58,7 +58,7 @@ function App() {
           {activeLink === "Overview" && (
             <Overview failedUploads={failedUploads} uploadFile={uploadStatus} />
           )}
-          {activeLink === "Uploads" && <Uploads />}
+          {activeLink === "Uploads" && <Uploads failedUploads={failedUploads}/>}
           {activeLink === "Activity" && <Activity />}
           {activeLink === "Settings" && <Settings />}
         </main>

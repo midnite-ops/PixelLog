@@ -7,7 +7,7 @@ interface UploadCardProps {
     document: LogType | null;
     size: string;
     message: string;
-    status: Upload;
+    status: Upload | string;
   };
   index: number;
   isOverview: boolean;
