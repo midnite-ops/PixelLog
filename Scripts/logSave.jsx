@@ -55,82 +55,45 @@ function generateUUID() {
   });
 }
 
-var PIXELOG_NAMESPACE = "http://pixellog.com/ns/1.0/";
-
-function initializeXMP() {
-  if (ExternalObject.AdobeXMPScript === undefined) {
-    ExternalObject.AdobeXMPScript = new ExternalObject("lib:AdobeXMPScript");
-    XMPMeta.registerNamespace(PIXELOG_NAMESPACE, "pl");
-  }
-}
-
 //Get the documentID, if it does not exist, return null
-function getDocumentId(filePath) {
-  initializeXMP();
+function getOrCreateDocumentId(filePath) {
 
-  var xmpFile = new XMPFile(filePath, XMPConst.UNKNOWN, XMPConst.OPEN_FOR_READ);
+    var configPath = "/Users/mac/.pixellog_exiftool.config";
+    var outputPath = Folder.temp.fsName + "/pixellog-document-id.txt";
 
-  var xmp = xmpFile.getXMP();
-  var documentId = null;
+    // READ EXISTING DOCUMENT ID
+    var readCommand = '"/usr/local/bin/exiftool" ' +
+        '-config "' + configPath + '" ' +
+        '-s3 -XMP-PixelLog:documentId "' +
+        filePath + '" > "' + outputPath + '"';
 
-  if (xmp) {
-    if (xmp.doesPropertyExist(PIXELOG_NAMESPACE, "documentId")) {
-      var value = xmp.getProperty(PIXELOG_NAMESPACE, "documentId");
+    app.system(readCommand);
 
-      if (value) {
-        documentId = value.toString();
-      }
+    // READ COMMAND OUTPUT
+    var outputFile = new File(outputPath);
+    var documentId = "";
+
+    if (outputFile.exists && outputFile.open("r")) {
+        documentId = outputFile.read();
+        outputFile.close();
     }
-  }
 
-  xmpFile.closeFile();
+    documentId = documentId.replace(/^\s+|\s+$/g, "");
 
-  return documentId;
-}
+    // GENERATE ID IF IT DOES NOT EXIST
+    if (!documentId) {
+        documentId = "DOC-" + new Date().getTime();
 
-//Saves the documentId to the physical file
-function writeDocumentIdToFile(doc, documentId) {
-  initializeXMP();
+        // WRITE DOCUMENT ID
+        var writeCommand = '"/usr/local/bin/exiftool" ' +
+            '-config "' + configPath + '" ' +
+            '-XMP-PixelLog:documentId="' + documentId + '" ' +
+            '"' + filePath + '"';
 
-  var filePath = doc.fullName.fsName;
+        app.system(writeCommand);
+    }
 
-  var xmpFile = new XMPFile(
-    filePath,
-    XMPConst.UNKNOWN,
-    XMPConst.OPEN_FOR_UPDATE,
-  );
-
-  var xmp = xmpFile.getXMP();
-
-  if (!xmp) {
-    xmp = new XMPMeta();
-  }
-
-  xmp.setProperty(PIXELOG_NAMESPACE, "documentId", documentId);
-
-  if (!xmpFile.canPutXMP(xmp)) {
-    xmpFile.closeFile();
-    throw new Error("Cannot write XMP to this file.");
-  }
-
-  xmpFile.putXMP(xmp);
-
-  alert("Successfully attached the id");
-
-  xmpFile.closeFile(XMPConst.CLOSE_UPDATE_SAFELY);
-}
-
-function attatchId() {
-  var documentId = getDocumentId(app.activeDocument.fullName.fsName);
-  if (!documentId) {
-    documentId = generateUUID();
-    alert(documentId);
-
-    writeDocumentIdToFile(app.activeDocument, documentId);
     return documentId;
-  }
-
-  return documentId;
 }
 
 function savePreview() {
@@ -222,7 +185,7 @@ function changeEventName(event) {
 
 var docInfo = getDocumentInfo(app.activeDocument);
 
-var documentId = getDocumentId(app.activeDocument.fullName.fsName);
+var documentId = getOrCreateDocumentId(app.activeDocument.fullName.fsName);
 
 var eventId = generateUUID();
 
@@ -368,7 +331,7 @@ try {
     }
   } else {
     logs.push({
-      documentId: attatchId(),
+      documentId: documentId,
       fileName: docInfo.name,
       filePath: docInfo.path || null,
       event: [newEvent],

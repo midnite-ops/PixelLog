@@ -96,7 +96,7 @@ function sendActivity(){
 }
 
 function updateQueue(id:string){
-  const updatedQueue = syncUploadStatus.queued.filter((docId) => docId.documentId !== id)
+  const updatedQueue = syncUploadStatus.queued!.filter((docId) => docId.documentId !== id)
   syncUploadStatus.queued = updatedQueue
   sendUploadStatus()
 }
@@ -168,7 +168,7 @@ const activity = {
 }
 
 //PROCESS RETRY QUEUE
-async function processRetryQueue() {
+export async function processRetryQueue() {
   const retryQueue = readJson("retryQueue.json");
 
   for (const log of retryQueue) {

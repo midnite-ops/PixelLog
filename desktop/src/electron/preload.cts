@@ -13,6 +13,7 @@ electron.contextBridge.exposeInMainWorld('pixelLog', {
         })
     },
     
+    retryUploads: () => electron.ipcRenderer.invoke('retryUploads'),
 
     getActivity: (callback: (data:any) => void) => {
         electron.ipcRenderer.on("get-activity", (_:any, activity:Activity) => {

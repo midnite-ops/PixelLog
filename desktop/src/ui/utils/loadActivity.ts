@@ -22,7 +22,7 @@ export function saveActivity(
   });
 
   localStorage.setItem(
-    "pixelLogActivity",
+    STORAGE_KEY,
     JSON.stringify(activities)
   );
 }

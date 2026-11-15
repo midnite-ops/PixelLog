@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { getActivity } from "../utils/loadActivity";
 import { activityIcon } from "../components/ActivityIcons";
 import { activityMessages } from "../utils/activityMessages";
+import { saveCompletedUploads } from "../utils/completedUploads";
 
 interface OverviewProps {
   failedUploads: LogType[];

@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { isDev } from "./isDev.js";
 import { pathResolver } from "./pathResolver.js";
-import { getFileInfo, getActivity, uploadStatus, startWatcher, getFailedUploads } from "./watcher.js";
+import { getFileInfo, getActivity, uploadStatus, startWatcher, getFailedUploads, processRetryQueue } from "./watcher.js";
 
 
 app.on("ready", () => {
@@ -33,6 +33,10 @@ app.on("ready", () => {
   ipcMain.handle("getFailedUploads", () => {
     return getFailedUploads();
   });
+
+  ipcMain.handle("retryUploads", () => {
+    return processRetryQueue()
+  })
  
 
   ipcMain.handle("getFileInfo", () => {

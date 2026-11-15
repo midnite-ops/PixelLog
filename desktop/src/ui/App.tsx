@@ -7,6 +7,7 @@ import Settings from "./pages/Settings";
 import Uploads from "./pages/Uploads";
 import type { LogType } from "../../types";
 import { saveActivity } from "./utils/loadActivity";
+import { saveCompletedUploads } from "./utils/completedUploads";
 
 function App() {
   const [activeLink, setActiveLink] = useState<string>("Overview");
@@ -29,24 +30,28 @@ function App() {
 
     //@ts-ignore
     window.pixelLog.getActivity((activity: any) => {
-      console.log(activity)
-      if(activity.event === '')return
-      saveActivity(activity.event, activity.file, activity.id)
-    })
+      if (activity.event === "") return;
+      saveActivity(activity.event, activity.file, activity.id);
+    });
     //@ts-ignore
-    window.pixelLog.uploadStatus((status: any) => {
-      setUploadStatus(status);
+    window.pixelLog.uploadStatus((doc: any) => {
+      setUploadStatus(doc);
 
-      const document = status?.document;
+      const document = doc?.document;
       const event = document?.event?.[0];
+
+      if(doc.status === 'Completed'){
+        saveCompletedUploads(doc)
+        console.log('yes')
+      }else{
+        console.log('no')
+      }
 
       if (document && event?.type && event?.id) {
         saveActivity(event.type, document.fileName, event.id);
       }
     });
   }, []);
-
- 
 
   //@ts-ignore
   return (
@@ -58,7 +63,9 @@ function App() {
           {activeLink === "Overview" && (
             <Overview failedUploads={failedUploads} uploadFile={uploadStatus} />
           )}
-          {activeLink === "Uploads" && <Uploads failedUploads={failedUploads}/>}
+          {activeLink === "Uploads" && (
+            <Uploads failedUploads={failedUploads} />
+          )}
           {activeLink === "Activity" && <Activity />}
           {activeLink === "Settings" && <Settings />}
         </main>
